@@ -43,7 +43,15 @@
                 <button class="ombrellone @(o.Occupato ? "occupato" : "libero")"
                         @onclick="() => Vai(o.Id)">
                     <span class="numero">@o.Numero</span>
-                    <span class="stato">@(o.Occupato ? "Occupato" : "Libero")</span>
+                    @if (o.Occupato)
+                    {
+                        var nome = o.Sessioni.FirstOrDefault()?.NomeCliente;
+                        <span class="stato">@(string.IsNullOrWhiteSpace(nome) ? "Occupato" : $"Occupato: {nome}")</span>
+                    }
+                    else
+                    {
+                        <span class="stato">Libero</span>
+                    }
                 </button>
             }
         </div>

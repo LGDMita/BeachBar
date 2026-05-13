@@ -28,24 +28,21 @@ h1:focus {
     border-color: #929292;
 }
 
-/* Tasto logout fisso in basso a destra, visibile su tutte le pagine */
-.btn-logout {
-    position: fixed;
-    bottom: 20px;
-    right: 20px;
-    background: rgba(0,0,0,0.55);
-    color: white;
-    padding: 8px 16px;
-    border-radius: 20px;
-    font-size: 0.85rem;
+.btn-logout-impostazioni {
+    display: inline-block;
+    padding: 12px 24px;
+    background: #f8d7da;
+    color: #721c24;
+    border-radius: 12px;
+    font-size: 1rem;
+    font-weight: 600;
     text-decoration: none;
-    z-index: 1000;
     transition: background 0.2s;
 }
 
-.btn-logout:hover {
-    background: rgba(0,0,0,0.8);
-    color: white;
+.btn-logout-impostazioni:hover {
+    background: #f5c2c7;
+    color: #721c24;
 }
 
 /*Luigi*/
@@ -206,4 +203,42 @@ h1:focus {
     border: none;
     border-radius: 10px;
     cursor: pointer;
+}
+
+@media (max-width: 600px) {
+    /* Impostazioni: label sopra il campo invece che affiancata */
+    .form-riga {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 6px;
+    }
+
+    .form-riga label {
+        width: auto;
+    }
+
+    /* Tabella prodotti: scorrimento orizzontale */
+    .sezione-card .tabella {
+        display: block;
+        overflow-x: auto;
+        -webkit-overflow-scrolling: touch;
+        white-space: nowrap;
+    }
+
+    /* Aggiungi prodotto: campi impilati */
+    .form-nuovo-prodotto {
+        flex-direction: column;
+        align-items: stretch;
+    }
+
+    .form-nuovo-prodotto .input-testo,
+    .form-nuovo-prodotto .input-numero,
+    .form-nuovo-prodotto .input-select {
+        width: 100%;
+    }
+
+    .btn-logout-impostazioni {
+        display: block;
+        text-align: center;
+    }
 }

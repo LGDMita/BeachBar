@@ -70,6 +70,11 @@
 
 .stato {
     font-size: 0.85rem;
+    max-width: 100%;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    padding: 0 4px;
 }
 
 .libero {
@@ -100,4 +105,53 @@
     border-radius: 12px;
     font-size: 1rem;
     cursor: pointer;
+}
+
+@media (max-width: 600px) {
+    .dashboard {
+        padding: 12px;
+    }
+
+    .header-dashboard {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 12px;
+    }
+
+    .titolo {
+        font-size: 1.5rem;
+        margin-bottom: 16px;
+    }
+
+    .statistiche {
+        grid-template-columns: repeat(3, 1fr);
+        gap: 8px;
+    }
+
+    .stat-card {
+        padding: 12px 8px;
+    }
+
+    .stat-valore {
+        font-size: 1.2rem;
+    }
+
+    .stat-label {
+        font-size: 0.75rem;
+        text-align: center;
+    }
+
+    .griglia {
+        grid-template-columns: repeat(3, 1fr);
+        gap: 10px;
+    }
+
+    .ombrellone {
+        padding: 16px 8px;
+        font-size: 1rem;
+    }
+
+    .numero {
+        font-size: 1.5rem;
+    }
 }

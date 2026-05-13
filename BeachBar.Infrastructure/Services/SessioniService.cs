@@ -11,7 +11,10 @@ public class SessioniService : ISessioniService
     public SessioniService(BeachBarDbContext db) => _db = db;
 
     public async Task<List<Ombrellone>> GetOmbrelloniAsync()
-        => await _db.Ombrelloni.OrderBy(o => o.Numero).ToListAsync();
+        => await _db.Ombrelloni
+            .Include(o => o.Sessioni.Where(s => !s.Chiusa))
+            .OrderBy(o => o.Numero)
+            .ToListAsync();
 
     public async Task<Ombrellone?> GetOmbrelloneByIdAsync(int id)
         => await _db.Ombrelloni.FindAsync(id);

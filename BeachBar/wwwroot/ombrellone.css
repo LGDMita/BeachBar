@@ -250,3 +250,52 @@
     flex-grow: 1;
     margin-right: 10px;
 }
+
+@media (max-width: 768px) {
+    /* Passa da due colonne affiancate a layout verticale */
+    .scheda-layout {
+        flex-direction: column;
+        height: auto;
+        min-height: 100vh;
+        padding: 12px;
+        gap: 16px;
+    }
+
+    /* La colonna sinistra (prodotti) occupa tutta la larghezza */
+    .colonna-sinistra {
+        overflow-y: visible;
+    }
+
+    /* Lo scontrino va sotto i prodotti, larghezza piena, non sticky */
+    .colonna-destra {
+        width: 100%;
+        position: static;
+        height: auto;
+        border-radius: 16px;
+    }
+
+    /* Griglia prodotti: 2 colonne invece di 3 */
+    .prodotti {
+        grid-template-columns: repeat(2, 1fr);
+    }
+
+    .btn-prodotto {
+        padding: 14px 8px;
+    }
+
+    .nome-cliente {
+        font-size: 1.4rem;
+    }
+
+    /* Le tab categorie scorrono orizzontalmente se troppe */
+    .categorie-tabs {
+        flex-wrap: nowrap;
+        overflow-x: auto;
+        padding-bottom: 4px;
+        -webkit-overflow-scrolling: touch;
+    }
+
+    .tab {
+        flex-shrink: 0;
+    }
+}

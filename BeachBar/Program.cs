@@ -98,10 +98,12 @@ if (!app.Environment.IsDevelopment())
 {
     app.UseExceptionHandler("/Error", createScopeForErrors: true);
     app.UseHsts();
+    // In sviluppo il redirect HTTPS viene saltato: ngrok espone HTTP su localhost
+    // e non può seguire il redirect su https://localhost con certificato self-signed.
+    app.UseHttpsRedirection();
 }
 
 app.UseStatusCodePagesWithReExecute("/not-found", createScopeForStatusCodePages: true);
-app.UseHttpsRedirection();
 
 // ── Swagger UI ─────────────────────────────────────────────────────────────
 app.UseSwagger();
