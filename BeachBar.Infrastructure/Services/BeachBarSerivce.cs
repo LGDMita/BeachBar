@@ -4,13 +4,78 @@ using Microsoft.EntityFrameworkCore;
 
 namespace BeachBar.Infrastructure.Services;
 
-public class BeachBarService
+public class BeachBarService : IBeachBarService
 {
     private readonly BeachBarDbContext _db;
 
     public BeachBarService(BeachBarDbContext db)
     {
         _db = db;
+    }
+
+    public async Task<Ombrellone?> GetOmbrelloneByIdAsync(int id)
+        => await _db.Ombrelloni.FindAsync(id);
+
+    public async Task<Prodotto?> GetProdottoByIdAsync(int id)
+        => await _db.Prodotti.FindAsync(id);
+
+    public async Task<List<Prodotto>> GetProdottiPerCategoriaAsync(string categoria)
+        => await _db.Prodotti.Where(p => p.Categoria == categoria).OrderBy(p => p.Nome).ToListAsync();
+
+    public async Task<List<Sessione>> GetTutteSessioniAsync()
+        => await _db.Sessioni
+            .Include(s => s.Ombrellone)
+            .Include(s => s.Consumazioni).ThenInclude(c => c.Prodotto)
+            .OrderByDescending(s => s.Apertura)
+            .ToListAsync();
+
+    public async Task<List<Sessione>> GetSessioniAperteAsync()
+        => await _db.Sessioni
+            .Include(s => s.Ombrellone)
+            .Include(s => s.Consumazioni).ThenInclude(c => c.Prodotto)
+            .Where(s => !s.Chiusa)
+            .OrderBy(s => s.Apertura)
+            .ToListAsync();
+
+    public async Task<Sessione?> GetSessioneByIdAsync(int id)
+        => await _db.Sessioni
+            .Include(s => s.Ombrellone)
+            .Include(s => s.Consumazioni).ThenInclude(c => c.Prodotto)
+            .FirstOrDefaultAsync(s => s.Id == id);
+
+    public async Task<Consumazione> AggiungiConsumazioneConQuantitaAsync(int sessioneId, int prodottoId, int quantita)
+    {
+        var consumazione = await _db.Consumazioni
+            .FirstOrDefaultAsync(c => c.SessioneId == sessioneId && c.ProdottoId == prodottoId);
+
+        if (consumazione != null)
+        {
+            consumazione.Quantita += quantita;
+        }
+        else
+        {
+            consumazione = new Consumazione
+            {
+                SessioneId = sessioneId,
+                ProdottoId = prodottoId,
+                Quantita = quantita,
+                Timestamp = DateTime.UtcNow
+            };
+            _db.Consumazioni.Add(consumazione);
+        }
+
+        await _db.SaveChangesAsync();
+        await _db.Entry(consumazione).Reference(c => c.Prodotto).LoadAsync();
+        return consumazione;
+    }
+
+    public async Task<bool> EliminaConsumazioneByIdAsync(int consumazioneId)
+    {
+        var consumazione = await _db.Consumazioni.FindAsync(consumazioneId);
+        if (consumazione == null) return false;
+        _db.Consumazioni.Remove(consumazione);
+        await _db.SaveChangesAsync();
+        return true;
     }
 
     public async Task<List<Ombrellone>> GetOmbrelloniAsync()
