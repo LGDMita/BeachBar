@@ -22,14 +22,12 @@
             <div class="nome-cliente-container" style="display: flex; justify-content: space-between; align-items: center;">
                 @if (isEditingNome)
                 {
-                    <input class="input-nome"
-                           @bind="nuovoNome"
-                           @onkeyup="@(async (e) => { if (e.Key == "Enter") await SalvaNome(); })" />
-                    <button class="btn-salva" @onclick="SalvaNome">✔️</button>
+                    <input class="input-nome" @bind="nuovoNome" @onkeyup="@(async (e) => { if (e.Key == "Enter") await SalvaNome(); })" />
+                    <button @onclick="SalvaNome" style="background:none; border:none; cursor:pointer;">✔️</button>
                 }
                 else
                 {
-                    <p class="nome-cliente" style="margin: 0;">@(sessione.NomeCliente ?? "Cliente anonimo")</p>
+                    <p class="nome-cliente" style="margin:0;">@(sessione.NomeCliente ?? "Cliente anonimo")</p>
                     <button class="btn-edit" @onclick="IniziaModifica" style="background: transparent; border: none; cursor: pointer;">
                         ✏️
                     </button>
@@ -91,15 +89,27 @@
                 Totale: € @sessione.Consumazioni.Sum(c => c.Quantita * c.Prodotto.Prezzo).ToString("0.00")
             </div>
 
-            <div class="azioni-scontrino" style="display: flex; gap: 10px; margin-top: 20px;">
-                <button class="btn-chiudi" @onclick="ChiudiSessione">Chiudi e incassa</button>
-                <button class="btn-annulla" @onclick="AnnullaSessione">
-                    Annulla
-                </button>
+            <div class="azioni-scontrino" style="display: flex; flex-direction: column; gap: 10px; margin-top: 20px;">
+                @if (!mostraConfermaAnnulla)
+                {
+                    <button class="btn-chiudi" @onclick="ChiudiSessione">Chiudi e incassa</button>
+                    <button class="btn-annulla" @onclick="() => mostraConfermaAnnulla = true" style="background-color: #f8d7da; color: #721c24;">
+                        Annulla sessione
+                    </button>
+                }
+                else
+                {
+                    <div class="conferma-annulla" style="background: #fff3cd; padding: 15px; border-radius: 12px; text-align: center;">
+                        <p style="margin-bottom: 10px; color: #856404; font-weight: bold;">Confermi l'annullamento?</p>
+                        <div style="display: flex; gap: 10px;">
+                            <button @onclick="EseguiAnnulla" style="flex:1; background:#dc3545; color:white; border:none; padding:10px; border-radius:8px;">Sì</button>
+                            <button @onclick="() => mostraConfermaAnnulla = false" style="flex:1; background:#6c757d; color:white; border:none; padding:10px; border-radius:8px;">No</button>
+                        </div>
+                    </div>
+                }
             </div>
         </div>
     }
-
 </div>
 
 @code {
@@ -109,8 +119,21 @@
     private List<BeachBar.Core.Entities.Prodotto> prodotti = new();
     private string? nomeCliente;
     private string categoriaSelezionata = "";
+
     private bool isEditingNome = false;
     private string? nuovoNome;
+    private bool mostraConfermaAnnulla = false;
+
+    private List<string> categorie => prodotti.Select(p => p.Categoria).Distinct().OrderBy(c => c).ToList();
+    private List<BeachBar.Core.Entities.Prodotto> prodottiFiltrati =>
+        prodotti.Where(p => p.Categoria == categoriaSelezionata).ToList();
+
+    protected override async Task OnInitializedAsync()
+    {
+        prodotti = await Service.GetProdottiAsync();
+        sessione = await Service.GetSessioneAttivaAsync(Id);
+        if (categorie.Any()) categoriaSelezionata = categorie.First();
+    }
 
     private void IniziaModifica()
     {
@@ -122,23 +145,19 @@
     {
         if (sessione != null)
         {
-            // Assicurati che il tuo Service abbia un metodo per aggiornare il nome
             await Service.AggiornaNomeSessioneAsync(sessione.Id, nuovoNome);
             sessione.NomeCliente = nuovoNome;
         }
         isEditingNome = false;
     }
 
-
-    private List<string> categorie => prodotti.Select(p => p.Categoria).Distinct().OrderBy(c => c).ToList();
-    private List<BeachBar.Core.Entities.Prodotto> prodottiFiltrati =>
-        prodotti.Where(p => p.Categoria == categoriaSelezionata).ToList();
-
-    protected override async Task OnInitializedAsync()
+    private async Task EseguiAnnulla()
     {
-        prodotti = await Service.GetProdottiAsync();
-        sessione = await Service.GetSessioneAttivaAsync(Id);
-        if (categorie.Any()) categoriaSelezionata = categorie.First();
+        if (sessione != null)
+        {
+            await Service.AnnullaSessioneAsync(sessione.Id);
+            Nav.NavigateTo("/");
+        }
     }
 
     private async Task ApriSessione()
@@ -166,15 +185,4 @@
     }
 
     private void TornaDashboard() => Nav.NavigateTo("/");
-
-    private async Task AnnullaSessione()
-    {
-        var confermato = await JS.InvokeAsync<bool>("confirm", "Sei sicuro di voler annullare? Tutti i dati andranno persi.");
-
-        if (confermato && sessione != null)
-        {
-            await Service.AnnullaSessioneAsync(sessione.Id);
-            Nav.NavigateTo("/");
-        }
-    }
 }
