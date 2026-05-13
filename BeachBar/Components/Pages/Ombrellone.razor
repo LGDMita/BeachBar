@@ -1,6 +1,7 @@
 ﻿@page "/ombrellone/{Id:int}"
 @inject BeachBar.Infrastructure.Services.BeachBarService Service
 @inject NavigationManager Nav
+@inject IJSRuntime JS
 
 <div class="scheda-layout">
 
@@ -18,7 +19,22 @@
         }
         else
         {
-            <p class="nome-cliente">@(sessione.NomeCliente ?? "Cliente anonimo")</p>
+            <div class="nome-cliente-container" style="display: flex; justify-content: space-between; align-items: center;">
+                @if (isEditingNome)
+                {
+                    <input class="input-nome"
+                           @bind="nuovoNome"
+                           @onkeyup="@(async (e) => { if (e.Key == "Enter") await SalvaNome(); })" />
+                    <button class="btn-salva" @onclick="SalvaNome">✔️</button>
+                }
+                else
+                {
+                    <p class="nome-cliente" style="margin: 0;">@(sessione.NomeCliente ?? "Cliente anonimo")</p>
+                    <button class="btn-edit" @onclick="IniziaModifica" style="background: transparent; border: none; cursor: pointer;">
+                        ✏️
+                    </button>
+                }
+            </div>
 
             <div class="categorie-tabs">
                 @foreach (var cat in categorie)
@@ -75,7 +91,12 @@
                 Totale: € @sessione.Consumazioni.Sum(c => c.Quantita * c.Prodotto.Prezzo).ToString("0.00")
             </div>
 
-            <button class="btn-chiudi" @onclick="ChiudiSessione">Chiudi e incassa</button>
+            <div class="azioni-scontrino" style="display: flex; gap: 10px; margin-top: 20px;">
+                <button class="btn-chiudi" @onclick="ChiudiSessione">Chiudi e incassa</button>
+                <button class="btn-annulla" @onclick="AnnullaSessione">
+                    Annulla
+                </button>
+            </div>
         </div>
     }
 
@@ -88,6 +109,26 @@
     private List<BeachBar.Core.Entities.Prodotto> prodotti = new();
     private string? nomeCliente;
     private string categoriaSelezionata = "";
+    private bool isEditingNome = false;
+    private string? nuovoNome;
+
+    private void IniziaModifica()
+    {
+        nuovoNome = sessione?.NomeCliente;
+        isEditingNome = true;
+    }
+
+    private async Task SalvaNome()
+    {
+        if (sessione != null)
+        {
+            // Assicurati che il tuo Service abbia un metodo per aggiornare il nome
+            await Service.AggiornaNomeSessioneAsync(sessione.Id, nuovoNome);
+            sessione.NomeCliente = nuovoNome;
+        }
+        isEditingNome = false;
+    }
+
 
     private List<string> categorie => prodotti.Select(p => p.Categoria).Distinct().OrderBy(c => c).ToList();
     private List<BeachBar.Core.Entities.Prodotto> prodottiFiltrati =>
@@ -125,4 +166,15 @@
     }
 
     private void TornaDashboard() => Nav.NavigateTo("/");
+
+    private async Task AnnullaSessione()
+    {
+        var confermato = await JS.InvokeAsync<bool>("confirm", "Sei sicuro di voler annullare? Tutti i dati andranno persi.");
+
+        if (confermato && sessione != null)
+        {
+            await Service.AnnullaSessioneAsync(sessione.Id);
+            Nav.NavigateTo("/");
+        }
+    }
 }

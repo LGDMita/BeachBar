@@ -189,14 +189,47 @@
     width: 100%;
     padding: 18px;
     font-size: 1.2rem;
+    background-color: #a2e67c;
+    color: white;
+    border: none;
+    border-radius: 12px;
+    cursor: pointer;
+    flex: 2;
+}
+
+.btn-annulla {
+    width: 100%;
+    padding: 18px;
+    font-size: 1.2rem;
     background-color: #dc3545;
     color: white;
     border: none;
     border-radius: 12px;
     cursor: pointer;
+    flex: 2;
 }
 
 .vuoto {
     color: #999;
     font-style: italic;
+}
+
+.nome-cliente-container {
+    margin-bottom: 15px;
+    padding: 5px 0;
+    border-bottom: 1px solid #eee;
+}
+
+.btn-edit {
+    font-size: 1.2rem;
+    transition: transform 0.2s;
+}
+
+    .btn-edit:hover {
+        transform: scale(1.1);
+    }
+
+.input-nome {
+    flex-grow: 1;
+    margin-right: 10px;
 }

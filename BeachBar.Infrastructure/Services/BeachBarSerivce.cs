@@ -204,4 +204,31 @@ public class BeachBarService
 
     public async Task<List<string>> GetCategorieAsync()
         => await _db.Prodotti.Select(p => p.Categoria).Distinct().OrderBy(c => c).ToListAsync();
+
+    public async Task AggiornaNomeSessioneAsync(int sessioneId, string? nuovoNome)
+    {
+        var sessione = await _db.Sessioni.FindAsync(sessioneId);
+        if (sessione != null)
+        {
+            sessione.NomeCliente = nuovoNome;
+            await _db.SaveChangesAsync();
+        }
+    }
+
+    public async Task AnnullaSessioneAsync(int sessioneId)
+    {
+        var sessione = await _db.Sessioni
+            .Include(s => s.Ombrellone)
+            .FirstOrDefaultAsync(s => s.Id == sessioneId);
+
+        if (sessione == null) return;
+
+        if (sessione.Ombrellone != null)
+        {
+            sessione.Ombrellone.Occupato = false;
+        }
+
+        _db.Sessioni.Remove(sessione);
+        await _db.SaveChangesAsync();
+    }
 }
