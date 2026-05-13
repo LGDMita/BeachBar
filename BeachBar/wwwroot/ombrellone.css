@@ -185,6 +185,23 @@
     margin-top: 8px;
 }
 
+.btn-torna-dashboard {
+    width: 100%;
+    padding: 14px;
+    font-size: 1.1rem;
+    background-color: #5bc0de;
+    color: white;
+    border: none;
+    border-radius: 12px;
+    cursor: pointer;
+    font-weight: 600;
+    letter-spacing: 0.3px;
+}
+
+.btn-torna-dashboard:hover {
+    background-color: #31b0d5;
+}
+
 .btn-chiudi {
     width: 100%;
     padding: 18px;

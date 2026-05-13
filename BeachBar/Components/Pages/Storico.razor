@@ -1,6 +1,6 @@
-﻿@page "/storico"
+@page "/storico"
 @using BeachBar.Core.Entities
-@inject BeachBar.Infrastructure.Services.IBeachBarService Service
+@inject BeachBar.Infrastructure.Services.ISessioniService Sessioni
 @inject NavigationManager Nav
 @inject IJSRuntime JS
 
@@ -73,14 +73,14 @@
 
     protected override async Task OnInitializedAsync() => await CaricaDati();
 
-    private async Task CaricaDati() => sessioni = await Service.GetStoricoSessioniAsync();
+    private async Task CaricaDati() => sessioni = await Sessioni.GetStoricoSessioniAsync();
 
     private async Task Elimina(int id)
     {
         bool confermato = await JS.InvokeAsync<bool>("confirm", "Eliminare definitivamente questo scontrino?");
         if (confermato)
         {
-            await Service.EliminaSessioneStoricoAsync(id);
+            await Sessioni.EliminaSessioneStoricoAsync(id);
             await CaricaDati();
         }
     }

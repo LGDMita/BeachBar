@@ -5,47 +5,58 @@ using Microsoft.AspNetCore.Mvc;
 
 namespace BeachBar.Controllers;
 
+/// <summary>
+/// Gestisce il ciclo di vita delle sessioni: apertura, consultazione e chiusura.
+/// Una sessione rappresenta il "conto aperto" di un cliente su un ombrellone.
+/// </summary>
 [ApiController]
 [Route("api/[controller]")]
 public class SessioniController : ControllerBase
 {
-    private readonly IBeachBarService _service;
+    private readonly ISessioniService _sessioni;
     private readonly ILogger<SessioniController> _logger;
 
-    public SessioniController(IBeachBarService service, ILogger<SessioniController> logger)
+    public SessioniController(ISessioniService sessioni, ILogger<SessioniController> logger)
     {
-        _service = service;
+        _sessioni = sessioni;
         _logger = logger;
     }
 
+    /// <summary>Restituisce tutte le sessioni (aperte e chiuse).</summary>
     [HttpGet]
     [ProducesResponseType(typeof(List<SessioneDto>), StatusCodes.Status200OK)]
     public async Task<IActionResult> GetSessioni()
     {
-        var sessioni = await _service.GetTutteSessioniAsync();
+        var sessioni = await _sessioni.GetTutteSessioniAsync();
         return Ok(sessioni.Select(SessioneDto.FromEntity).ToList());
     }
 
+    /// <summary>Restituisce solo le sessioni attualmente aperte.</summary>
     [HttpGet("aperte")]
     [ProducesResponseType(typeof(List<SessioneDto>), StatusCodes.Status200OK)]
     public async Task<IActionResult> GetSessioniAperte()
     {
-        var sessioni = await _service.GetSessioniAperteAsync();
+        var sessioni = await _sessioni.GetSessioniAperteAsync();
         return Ok(sessioni.Select(SessioneDto.FromEntity).ToList());
     }
 
+    /// <summary>Restituisce una singola sessione con l'elenco completo delle consumazioni.</summary>
     [HttpGet("{id:int}")]
     [ProducesResponseType(typeof(SessioneDto), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IActionResult> GetSessione(int id)
     {
-        var sessione = await _service.GetSessioneByIdAsync(id);
+        var sessione = await _sessioni.GetSessioneByIdAsync(id);
         if (sessione == null)
             return NotFound("Sessione non trovata");
 
         return Ok(SessioneDto.FromEntity(sessione));
     }
 
+    /// <summary>
+    /// Apre una nuova sessione per un ombrellone.
+    /// Verifica che l'ombrellone esista e che non abbia già una sessione aperta.
+    /// </summary>
     [HttpPost]
     [ProducesResponseType(typeof(SessioneDto), StatusCodes.Status201Created)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
@@ -56,37 +67,44 @@ public class SessioniController : ControllerBase
         if (!ModelState.IsValid)
             return BadRequest(ModelState);
 
-        var ombrellone = await _service.GetOmbrelloneByIdAsync(request.OmbrelloneId);
+        var ombrellone = await _sessioni.GetOmbrelloneByIdAsync(request.OmbrelloneId);
         if (ombrellone == null)
             return NotFound("Ombrellone non trovato");
 
-        var sessioneEsistente = await _service.GetSessioneAttivaAsync(request.OmbrelloneId);
+        var sessioneEsistente = await _sessioni.GetSessioneAttivaAsync(request.OmbrelloneId);
         if (sessioneEsistente != null)
             return Conflict("Esiste già una sessione aperta per questo ombrellone");
 
-        await _service.ApriSessioneAsync(request.OmbrelloneId, request.NomeCliente);
+        await _sessioni.ApriSessioneAsync(request.OmbrelloneId, request.NomeCliente);
 
-        var nuovaSessione = await _service.GetSessioneAttivaAsync(request.OmbrelloneId);
+        // Il servizio non restituisce la sessione appena creata,
+        // quindi la recuperiamo subito dopo con una seconda query.
+        var nuovaSessione = await _sessioni.GetSessioneAttivaAsync(request.OmbrelloneId);
         var dto = SessioneDto.FromEntity(nuovaSessione!);
         return CreatedAtAction(nameof(GetSessione), new { id = dto.Id }, dto);
     }
 
+    /// <summary>
+    /// Chiude una sessione e calcola il totale finale.
+    /// Una sessione già chiusa non può essere chiusa di nuovo (409 Conflict).
+    /// </summary>
     [HttpPut("{id:int}/chiudi")]
     [ProducesResponseType(typeof(SessioneDto), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     [ProducesResponseType(StatusCodes.Status409Conflict)]
     public async Task<IActionResult> ChiudiSessione(int id)
     {
-        var sessione = await _service.GetSessioneByIdAsync(id);
+        var sessione = await _sessioni.GetSessioneByIdAsync(id);
         if (sessione == null)
             return NotFound("Sessione non trovata");
 
         if (sessione.Chiusa)
             return Conflict("La sessione è già chiusa");
 
-        await _service.ChiudiSessioneAsync(id);
+        await _sessioni.ChiudiSessioneAsync(id);
 
-        var sessioneChiusa = await _service.GetSessioneByIdAsync(id);
+        // Rileggiamo dopo la chiusura per includere data di chiusura e totale aggiornato.
+        var sessioneChiusa = await _sessioni.GetSessioneByIdAsync(id);
         return Ok(SessioneDto.FromEntity(sessioneChiusa!));
     }
 }

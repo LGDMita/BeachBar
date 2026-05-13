@@ -1,5 +1,7 @@
-﻿@page "/ombrellone/{Id:int}"
-@inject BeachBar.Infrastructure.Services.IBeachBarService Service
+@page "/ombrellone/{Id:int}"
+@inject BeachBar.Infrastructure.Services.ISessioniService Sessioni
+@inject BeachBar.Infrastructure.Services.IProdottiService Prodotti
+@inject BeachBar.Infrastructure.Services.IConsumazioniService Consumazioni
 @inject NavigationManager Nav
 @inject IJSRuntime JS
 
@@ -90,6 +92,7 @@
             </div>
 
             <div class="azioni-scontrino" style="display: flex; flex-direction: column; gap: 10px; margin-top: 20px;">
+                <button class="btn-torna-dashboard" @onclick="TornaDashboard">Va bene così →</button>
                 @if (!mostraConfermaAnnulla)
                 {
                     <button class="btn-chiudi" @onclick="ChiudiSessione">Chiudi e incassa</button>
@@ -130,8 +133,8 @@
 
     protected override async Task OnInitializedAsync()
     {
-        prodotti = await Service.GetProdottiAsync();
-        sessione = await Service.GetSessioneAttivaAsync(Id);
+        prodotti = await Prodotti.GetProdottiAsync();
+        sessione = await Sessioni.GetSessioneAttivaAsync(Id);
         if (categorie.Any()) categoriaSelezionata = categorie.First();
     }
 
@@ -145,7 +148,7 @@
     {
         if (sessione != null)
         {
-            await Service.AggiornaNomeSessioneAsync(sessione.Id, nuovoNome);
+            await Sessioni.AggiornaNomeSessioneAsync(sessione.Id, nuovoNome);
             sessione.NomeCliente = nuovoNome;
         }
         isEditingNome = false;
@@ -155,32 +158,32 @@
     {
         if (sessione != null)
         {
-            await Service.AnnullaSessioneAsync(sessione.Id);
+            await Sessioni.AnnullaSessioneAsync(sessione.Id);
             Nav.NavigateTo("/");
         }
     }
 
     private async Task ApriSessione()
     {
-        await Service.ApriSessioneAsync(Id, nomeCliente);
-        sessione = await Service.GetSessioneAttivaAsync(Id);
+        await Sessioni.ApriSessioneAsync(Id, nomeCliente);
+        sessione = await Sessioni.GetSessioneAttivaAsync(Id);
     }
 
     private async Task Aggiungi(int prodottoId)
     {
-        await Service.AggiungiConsumazione(sessione!.Id, prodottoId);
-        sessione = await Service.GetSessioneAttivaAsync(Id);
+        await Consumazioni.AggiungiConsumazione(sessione!.Id, prodottoId);
+        sessione = await Sessioni.GetSessioneAttivaAsync(Id);
     }
 
     private async Task Rimuovi(int prodottoId)
     {
-        await Service.RimuoviConsumazione(sessione!.Id, prodottoId);
-        sessione = await Service.GetSessioneAttivaAsync(Id);
+        await Consumazioni.RimuoviConsumazione(sessione!.Id, prodottoId);
+        sessione = await Sessioni.GetSessioneAttivaAsync(Id);
     }
 
     private async Task ChiudiSessione()
     {
-        await Service.ChiudiSessioneAsync(sessione!.Id);
+        await Sessioni.ChiudiSessioneAsync(sessione!.Id);
         Nav.NavigateTo("/");
     }
 

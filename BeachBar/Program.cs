@@ -6,15 +6,24 @@ using Microsoft.OpenApi;
 
 var builder = WebApplication.CreateBuilder(args);
 
-// Add services to the container.
+// ── Frontend Blazor ────────────────────────────────────────────────────────
 builder.Services.AddRazorComponents()
     .AddInteractiveServerComponents();
 
+// ── Database ───────────────────────────────────────────────────────────────
+// La stringa di connessione viene letta da appsettings.json ("DefaultConnection").
 builder.Services.AddDbContext<BeachBarDbContext>(options =>
     options.UseNpgsql(builder.Configuration.GetConnectionString("DefaultConnection")));
 
-builder.Services.AddScoped<IBeachBarService, BeachBarService>();
+// ── Servizi applicativi ────────────────────────────────────────────────────
+// Ogni servizio è registrato tramite la propria interfaccia per consentire
+// la sostituzione o il mock nei test senza modificare il codice chiamante.
+builder.Services.AddScoped<IProdottiService, ProdottiService>();
+builder.Services.AddScoped<ISessioniService, SessioniService>();
+builder.Services.AddScoped<IConsumazioniService, ConsumazioniService>();
+builder.Services.AddScoped<IImpostazioniService, ImpostazioniService>();
 
+// ── REST API ───────────────────────────────────────────────────────────────
 builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen(c =>
@@ -29,16 +38,18 @@ builder.Services.AddSwaggerGen(c =>
 
 var app = builder.Build();
 
-// Configure the HTTP request pipeline.
+// ── Pipeline HTTP ──────────────────────────────────────────────────────────
 if (!app.Environment.IsDevelopment())
 {
     app.UseExceptionHandler("/Error", createScopeForErrors: true);
-    // The default HSTS value is 30 days. You may want to change this for production scenarios, see https://aka.ms/aspnetcore-hsts.
     app.UseHsts();
 }
+
 app.UseStatusCodePagesWithReExecute("/not-found", createScopeForStatusCodePages: true);
 app.UseHttpsRedirection();
 
+// ── Swagger UI ─────────────────────────────────────────────────────────────
+// Disponibile su /swagger — solo per esplorare e testare le API dal browser.
 app.UseSwagger();
 app.UseSwaggerUI(c =>
 {
@@ -48,10 +59,12 @@ app.UseSwaggerUI(c =>
 
 app.UseAntiforgery();
 
+// ── Routing ────────────────────────────────────────────────────────────────
 app.MapStaticAssets();
 app.MapRazorComponents<App>()
     .AddInteractiveServerRenderMode();
 
+// MapControllers deve stare dopo MapRazorComponents per evitare conflitti di routing.
 app.MapControllers();
 
 app.Run();

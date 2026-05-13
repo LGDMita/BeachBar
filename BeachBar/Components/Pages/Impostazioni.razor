@@ -1,5 +1,7 @@
-﻿@page "/impostazioni"
-@inject BeachBar.Infrastructure.Services.IBeachBarService Service
+@page "/impostazioni"
+@inject BeachBar.Infrastructure.Services.IProdottiService Prodotti
+@inject BeachBar.Infrastructure.Services.ISessioniService Sessioni
+@inject BeachBar.Infrastructure.Services.IImpostazioniService ImpostazioniSvc
 @inject NavigationManager Nav
 
 <div class="dashboard">
@@ -92,7 +94,7 @@
                     </tr>
                 </thead>
                 <tbody>
-                    @foreach (var p in prodotti)
+                    @foreach (var p in prodottiLista)
                     {
                         <tr>
                             @if (prodottoInModifica == p.Id)
@@ -192,7 +194,7 @@
     private string? msgSpiaggia;
 
     // Prodotti
-    private List<BeachBar.Core.Entities.Prodotto> prodotti = new();
+    private List<BeachBar.Core.Entities.Prodotto> prodottiLista = new();
     private List<string> categorie = new();
     private string? categoriaInModifica;
     private string? nuovoNomeCategoria;
@@ -214,7 +216,7 @@
 
     protected override async Task OnInitializedAsync()
     {
-        var imp = await Service.GetImpostazioniAsync();
+        var imp = await ImpostazioniSvc.GetImpostazioniAsync();
         numOmbrelloni = imp.NumeroOmbrelloni;
         numColonne = imp.NumeroColonne;
         await CaricaProdotti();
@@ -222,14 +224,14 @@
 
     private async Task CaricaProdotti()
     {
-        prodotti = await Service.GetTuttiProdottiAsync();
-        categorie = await Service.GetCategorieAsync();
+        prodottiLista = await Prodotti.GetTuttiProdottiAsync();
+        categorie = await Prodotti.GetCategorieAsync();
     }
 
     private async Task SalvaOmbrelloni()
     {
-        await Service.AggiornaOmbrelloniAsync(numOmbrelloni);
-        await Service.AggiornaColumeAsync(numColonne);
+        await ImpostazioniSvc.AggiornaOmbrelloniAsync(numOmbrelloni);
+        await ImpostazioniSvc.AggiornaColumeAsync(numColonne);
         msgSpiaggia = "Configurazione salvata.";
     }
 
@@ -242,7 +244,7 @@
     private async Task SalvaCategoria(string vecchia)
     {
         if (!string.IsNullOrWhiteSpace(nuovoNomeCategoria))
-            await Service.RinominaCategoriaAsync(vecchia, nuovoNomeCategoria!);
+            await Prodotti.RinominaCategoriaAsync(vecchia, nuovoNomeCategoria!);
         categoriaInModifica = null;
         await CaricaProdotti();
     }
@@ -251,7 +253,7 @@
 
     private async Task EliminaCategoria()
     {
-        await Service.EliminaCategoriaAsync(confermaCancellaCategoria!);
+        await Prodotti.EliminaCategoriaAsync(confermaCancellaCategoria!);
         confermaCancellaCategoria = null;
         await CaricaProdotti();
     }
@@ -259,7 +261,7 @@
     private async Task AggiuntaProdotto()
     {
         if (string.IsNullOrWhiteSpace(nuovoProdottoNome)) return;
-        await Service.AggiuntaProdottoAsync(nuovoProdottoNome, nuovoProdottoPrezzo, nuovoProdottoCategoria);
+        await Prodotti.AggiuntaProdottoAsync(nuovoProdottoNome, nuovoProdottoPrezzo, nuovoProdottoCategoria);
         nuovoProdottoNome = "";
         nuovoProdottoPrezzo = 0;
         await CaricaProdotti();
@@ -276,27 +278,27 @@
 
     private async Task SalvaProdotto(int id)
     {
-        await Service.AggiornaProdottoAsync(id, editNome, editPrezzo, editCategoria, editDisponibile);
+        await Prodotti.AggiornaProdottoAsync(id, editNome, editPrezzo, editCategoria, editDisponibile);
         prodottoInModifica = null;
         await CaricaProdotti();
     }
 
     private async Task EliminaProdotto(int id)
     {
-        await Service.EliminaProdottoAsync(id);
+        await Prodotti.EliminaProdottoAsync(id);
         await CaricaProdotti();
     }
 
     private async Task EseguiReset()
     {
-        await Service.ResetTotaliAsync();
+        await Sessioni.ResetTotaliAsync();
         confermaReset = false;
         msgReset = "Reset sessioni completato.";
     }
 
     private async Task EseguiResetVisivo()
     {
-        await Service.ResetVisivoStatisticheAsync();
+        await ImpostazioniSvc.ResetVisivoStatisticheAsync();
         confermaResetVisivo = false;
         msgResetVisivo = "Contatori dashboard azzerati.";
     }

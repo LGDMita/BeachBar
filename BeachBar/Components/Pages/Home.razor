@@ -1,5 +1,6 @@
-﻿@page "/"
-@inject BeachBar.Infrastructure.Services.IBeachBarService Service
+@page "/"
+@inject BeachBar.Infrastructure.Services.ISessioniService Sessioni
+@inject BeachBar.Infrastructure.Services.IImpostazioniService Impostazioni
 @inject NavigationManager Nav
 
 <div class="dashboard">
@@ -58,12 +59,12 @@
 
     protected override async Task OnInitializedAsync()
     {
-        ombrelloni = await Service.GetOmbrelloniAsync();
-        var stats = await Service.GetStatisticheAsync();
+        ombrelloni = await Sessioni.GetOmbrelloniAsync();
+        var stats = await Impostazioni.GetStatisticheAsync();
         aperto = stats.aperto;
         incassato = stats.incassato;
         ombrelloniAttivi = stats.ombrelloniAttivi;
-        var imp = await Service.GetImpostazioniAsync();
+        var imp = await Impostazioni.GetImpostazioniAsync();
         colonne = imp.NumeroColonne;
     }
 
