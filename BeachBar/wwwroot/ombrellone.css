@@ -1,0 +1,201 @@
+﻿.scheda-layout {
+    display: flex;
+    gap: 24px;
+    padding: 20px;
+    height: 100vh;
+    box-sizing: border-box;
+}
+
+.colonna-sinistra {
+    flex: 1;
+    overflow-y: auto;
+}
+
+.colonna-destra {
+    width: 320px;
+    background: #f8f9fa;
+    border-radius: 20px;
+    padding: 20px;
+    display: flex;
+    flex-direction: column;
+    position: sticky;
+    top: 20px;
+    height: calc(100vh - 40px);
+    box-sizing: border-box;
+}
+
+.btn-torna {
+    background: none;
+    border: none;
+    font-size: 1rem;
+    cursor: pointer;
+    margin-bottom: 10px;
+    color: #555;
+}
+
+.apri-sessione {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+    margin-top: 20px;
+}
+
+.input-nome {
+    padding: 14px;
+    font-size: 1.1rem;
+    border: 2px solid #ccc;
+    border-radius: 12px;
+}
+
+.btn-apri {
+    padding: 16px;
+    font-size: 1.2rem;
+    background-color: #28a745;
+    color: white;
+    border: none;
+    border-radius: 12px;
+    cursor: pointer;
+}
+
+.nome-cliente {
+    font-size: 1.1rem;
+    color: #555;
+    margin-bottom: 16px;
+}
+
+.categorie-tabs {
+    display: flex;
+    gap: 10px;
+    margin-bottom: 20px;
+    flex-wrap: wrap;
+}
+
+.tab {
+    padding: 10px 20px;
+    border: 2px solid #dee2e6;
+    border-radius: 24px;
+    background: white;
+    font-size: 1rem;
+    cursor: pointer;
+    transition: all 0.15s;
+}
+
+.tab-attivo {
+    background: #007bff;
+    border-color: #007bff;
+    color: white;
+}
+
+.prodotti {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 12px;
+}
+
+.btn-prodotto {
+    padding: 20px 10px;
+    border: 2px solid #007bff;
+    border-radius: 14px;
+    background: #e7f3ff;
+    cursor: pointer;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 6px;
+    transition: transform 0.1s;
+}
+
+    .btn-prodotto:active {
+        transform: scale(0.95);
+    }
+
+.prod-nome {
+    font-size: 1rem;
+    font-weight: bold;
+}
+
+.prod-prezzo {
+    font-size: 0.9rem;
+    color: #007bff;
+}
+
+.nome-cliente-scontrino {
+    color: #888;
+    font-size: 0.9rem;
+    margin-top: -8px;
+    margin-bottom: 16px;
+}
+
+.scontrino-righe {
+    flex: 1;
+    overflow-y: auto;
+}
+
+.riga-scontrino {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 10px 0;
+    border-bottom: 1px solid #dee2e6;
+}
+
+.riga-info {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+}
+
+.riga-nome {
+    font-weight: bold;
+    font-size: 0.95rem;
+}
+
+.riga-qty {
+    font-size: 0.8rem;
+    color: #888;
+}
+
+.riga-destra {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.riga-totale {
+    font-weight: bold;
+}
+
+.btn-rimuovi {
+    background: #f8d7da;
+    border: none;
+    border-radius: 8px;
+    color: #721c24;
+    font-size: 1.2rem;
+    width: 36px;
+    height: 36px;
+    cursor: pointer;
+}
+
+.totale-scontrino {
+    font-size: 1.4rem;
+    font-weight: bold;
+    padding: 16px 0;
+    border-top: 2px solid #333;
+    margin-top: 8px;
+}
+
+.btn-chiudi {
+    width: 100%;
+    padding: 18px;
+    font-size: 1.2rem;
+    background-color: #dc3545;
+    color: white;
+    border: none;
+    border-radius: 12px;
+    cursor: pointer;
+}
+
+.vuoto {
+    color: #999;
+    font-style: italic;
+}

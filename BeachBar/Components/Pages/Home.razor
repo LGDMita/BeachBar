@@ -1,0 +1,58 @@
+﻿@page "/"
+@inject BeachBar.Infrastructure.Services.BeachBarService Service
+@inject NavigationManager Nav
+
+<div class="dashboard">
+    <h1 class="titolo">🏖️ Beach Bar</h1>
+
+    <div class="statistiche">
+        <div class="stat-card">
+            <span class="stat-valore">@ombrelloniAttivi</span>
+            <span class="stat-label">Ombrelloni attivi</span>
+        </div>
+        <div class="stat-card">
+            <span class="stat-valore">€ @aperto.ToString("0.00")</span>
+            <span class="stat-label">Totale aperto</span>
+        </div>
+        <div class="stat-card">
+            <span class="stat-valore">€ @incassato.ToString("0.00")</span>
+            <span class="stat-label">Incassato oggi</span>
+        </div>
+    </div>
+
+    @if (ombrelloni == null)
+    {
+        <p>Caricamento...</p>
+    }
+    else
+    {
+        <div class="griglia">
+            @foreach (var o in ombrelloni)
+            {
+                <button class="ombrellone @(o.Occupato ? "occupato" : "libero")"
+                        @onclick="() => Vai(o.Id)">
+                    <span class="numero">@o.Numero</span>
+                    <span class="stato">@(o.Occupato ? "Occupato" : "Libero")</span>
+                </button>
+            }
+        </div>
+    }
+</div>
+
+@code {
+    private List<BeachBar.Core.Entities.Ombrellone>? ombrelloni;
+    private decimal aperto;
+    private decimal incassato;
+    private int ombrelloniAttivi;
+
+    protected override async Task OnInitializedAsync()
+    {
+        ombrelloni = await Service.GetOmbrelloniAsync();
+        var stats = await Service.GetStatisticheAsync();
+        aperto = stats.aperto;
+        incassato = stats.incassato;
+        ombrelloniAttivi = stats.ombrelloniAttivi;
+    }
+
+    private void Vai(int id) => Nav.NavigateTo("/ombrellone/" + id);
+}

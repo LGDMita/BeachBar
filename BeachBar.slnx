@@ -1,0 +1,5 @@
+<Solution>
+  <Project Path="BeachBar.Core/BeachBar.Core.csproj" />
+  <Project Path="BeachBar.Infrastructure/BeachBar.Infrastructure.csproj" />
+  <Project Path="BeachBar/BeachBar.csproj" />
+</Solution>

@@ -1,0 +1,128 @@
+﻿@page "/ombrellone/{Id:int}"
+@inject BeachBar.Infrastructure.Services.BeachBarService Service
+@inject NavigationManager Nav
+
+<div class="scheda-layout">
+
+    <div class="colonna-sinistra">
+        <button class="btn-torna" @onclick="TornaDashboard">← Dashboard</button>
+        <h2>Ombrellone @Id</h2>
+
+        @if (sessione == null)
+        {
+            <div class="apri-sessione">
+                <p>Ombrellone libero</p>
+                <input class="input-nome" placeholder="Nome cliente (opzionale)" @bind="nomeCliente" />
+                <button class="btn-apri" @onclick="ApriSessione">Apri sessione</button>
+            </div>
+        }
+        else
+        {
+            <p class="nome-cliente">@(sessione.NomeCliente ?? "Cliente anonimo")</p>
+
+            <div class="categorie-tabs">
+                @foreach (var cat in categorie)
+                {
+                    <button class="tab @(categoriaSelezionata == cat ? "tab-attivo" : "")"
+                            @onclick="() => categoriaSelezionata = cat">
+                        @cat
+                    </button>
+                }
+            </div>
+
+            <div class="prodotti">
+                @foreach (var p in prodottiFiltrati)
+                {
+                    <button class="btn-prodotto" @onclick="() => Aggiungi(p.Id)">
+                        <span class="prod-nome">@p.Nome</span>
+                        <span class="prod-prezzo">€ @p.Prezzo.ToString("0.00")</span>
+                    </button>
+                }
+            </div>
+        }
+    </div>
+
+    @if (sessione != null)
+    {
+        <div class="colonna-destra">
+            <h3>Scontrino</h3>
+            <p class="nome-cliente-scontrino">@(sessione.NomeCliente ?? "Cliente anonimo")</p>
+
+            <div class="scontrino-righe">
+                @if (!sessione.Consumazioni.Any())
+                {
+                    <p class="vuoto">Nessuna consumazione ancora.</p>
+                }
+                else
+                {
+                    @foreach (var c in sessione.Consumazioni)
+                    {
+                        <div class="riga-scontrino">
+                            <div class="riga-info">
+                                <span class="riga-nome">@c.Prodotto.Nome</span>
+                                <span class="riga-qty">x@(c.Quantita)</span>
+                            </div>
+                            <div class="riga-destra">
+                                <span class="riga-totale">€ @((c.Quantita * c.Prodotto.Prezzo).ToString("0.00"))</span>
+                                <button class="btn-rimuovi" @onclick="() => Rimuovi(c.ProdottoId)">−</button>
+                            </div>
+                        </div>
+                    }
+                }
+            </div>
+
+            <div class="totale-scontrino">
+                Totale: € @sessione.Consumazioni.Sum(c => c.Quantita * c.Prodotto.Prezzo).ToString("0.00")
+            </div>
+
+            <button class="btn-chiudi" @onclick="ChiudiSessione">Chiudi e incassa</button>
+        </div>
+    }
+
+</div>
+
+@code {
+    [Parameter] public int Id { get; set; }
+
+    private BeachBar.Core.Entities.Sessione? sessione;
+    private List<BeachBar.Core.Entities.Prodotto> prodotti = new();
+    private string? nomeCliente;
+    private string categoriaSelezionata = "";
+
+    private List<string> categorie => prodotti.Select(p => p.Categoria).Distinct().OrderBy(c => c).ToList();
+    private List<BeachBar.Core.Entities.Prodotto> prodottiFiltrati =>
+        prodotti.Where(p => p.Categoria == categoriaSelezionata).ToList();
+
+    protected override async Task OnInitializedAsync()
+    {
+        prodotti = await Service.GetProdottiAsync();
+        sessione = await Service.GetSessioneAttivaAsync(Id);
+        if (categorie.Any()) categoriaSelezionata = categorie.First();
+    }
+
+    private async Task ApriSessione()
+    {
+        await Service.ApriSessioneAsync(Id, nomeCliente);
+        sessione = await Service.GetSessioneAttivaAsync(Id);
+    }
+
+    private async Task Aggiungi(int prodottoId)
+    {
+        await Service.AggiungiConsumazione(sessione!.Id, prodottoId);
+        sessione = await Service.GetSessioneAttivaAsync(Id);
+    }
+
+    private async Task Rimuovi(int prodottoId)
+    {
+        await Service.RimuoviConsumazione(sessione!.Id, prodottoId);
+        sessione = await Service.GetSessioneAttivaAsync(Id);
+    }
+
+    private async Task ChiudiSessione()
+    {
+        await Service.ChiudiSessioneAsync(sessione!.Id);
+        Nav.NavigateTo("/");
+    }
+
+    private void TornaDashboard() => Nav.NavigateTo("/");
+}

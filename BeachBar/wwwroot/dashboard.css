@@ -1,0 +1,83 @@
+﻿body {
+}
+.dashboard {
+    padding: 20px;
+    max-width: 900px;
+    margin: 0 auto;
+}
+
+.titolo {
+    text-align: center;
+    font-size: 2rem;
+    margin-bottom: 30px;
+}
+
+.statistiche {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 16px;
+    margin-bottom: 30px;
+}
+
+.stat-card {
+    background: #f8f9fa;
+    border-radius: 16px;
+    padding: 20px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 6px;
+}
+
+.stat-valore {
+    font-size: 1.6rem;
+    font-weight: bold;
+    color: #333;
+}
+
+.stat-label {
+    font-size: 0.85rem;
+    color: #888;
+}
+
+.griglia {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 16px;
+}
+
+.ombrellone {
+    border: none;
+    border-radius: 16px;
+    padding: 24px 12px;
+    font-size: 1.1rem;
+    cursor: pointer;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 8px;
+    transition: transform 0.1s;
+}
+
+    .ombrellone:active {
+        transform: scale(0.95);
+    }
+
+.numero {
+    font-size: 2rem;
+    font-weight: bold;
+}
+
+.stato {
+    font-size: 0.85rem;
+}
+
+.libero {
+    background-color: #d4edda;
+    color: #155724;
+}
+
+.occupato {
+    background-color: #f8d7da;
+    color: #721c24;
+}
