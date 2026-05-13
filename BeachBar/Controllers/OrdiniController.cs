@@ -1,6 +1,8 @@
 using BeachBar.Controllers.Dto;
 using BeachBar.Controllers.Dto.Request;
 using BeachBar.Infrastructure.Services;
+using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
 namespace BeachBar.Controllers;
@@ -12,6 +14,7 @@ namespace BeachBar.Controllers;
 /// </summary>
 [ApiController]
 [Route("api/sessioni/{sessioneId:int}/ordini")]
+[Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme)]
 public class OrdiniController : ControllerBase
 {
     private readonly ISessioniService _sessioni;

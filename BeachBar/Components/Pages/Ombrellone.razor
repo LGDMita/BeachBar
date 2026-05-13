@@ -1,4 +1,5 @@
 @page "/ombrellone/{Id:int}"
+@attribute [Authorize]
 @inject BeachBar.Infrastructure.Services.ISessioniService Sessioni
 @inject BeachBar.Infrastructure.Services.IProdottiService Prodotti
 @inject BeachBar.Infrastructure.Services.IConsumazioniService Consumazioni

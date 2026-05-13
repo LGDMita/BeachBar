@@ -28,6 +28,26 @@ h1:focus {
     border-color: #929292;
 }
 
+/* Tasto logout fisso in basso a destra, visibile su tutte le pagine */
+.btn-logout {
+    position: fixed;
+    bottom: 20px;
+    right: 20px;
+    background: rgba(0,0,0,0.55);
+    color: white;
+    padding: 8px 16px;
+    border-radius: 20px;
+    font-size: 0.85rem;
+    text-decoration: none;
+    z-index: 1000;
+    transition: background 0.2s;
+}
+
+.btn-logout:hover {
+    background: rgba(0,0,0,0.8);
+    color: white;
+}
+
 /*Luigi*/
 
 .tabs-impostazioni {

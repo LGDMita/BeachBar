@@ -1,7 +1,11 @@
+using System.Text;
 using BeachBar.Components;
 using BeachBar.Infrastructure.Data;
 using BeachBar.Infrastructure.Services;
+using Microsoft.AspNetCore.Authentication.Cookies;
+using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -10,18 +14,51 @@ var builder = WebApplication.CreateBuilder(args);
 builder.Services.AddRazorComponents()
     .AddInteractiveServerComponents();
 
+// ── Razor Pages (usate per login/logout, unico modo per scrivere cookie) ──
+builder.Services.AddRazorPages();
+
 // ── Database ───────────────────────────────────────────────────────────────
-// La stringa di connessione viene letta da appsettings.json ("DefaultConnection").
 builder.Services.AddDbContext<BeachBarDbContext>(options =>
     options.UseNpgsql(builder.Configuration.GetConnectionString("DefaultConnection")));
 
 // ── Servizi applicativi ────────────────────────────────────────────────────
-// Ogni servizio è registrato tramite la propria interfaccia per consentire
-// la sostituzione o il mock nei test senza modificare il codice chiamante.
 builder.Services.AddScoped<IProdottiService, ProdottiService>();
 builder.Services.AddScoped<ISessioniService, SessioniService>();
 builder.Services.AddScoped<IConsumazioniService, ConsumazioniService>();
 builder.Services.AddScoped<IImpostazioniService, ImpostazioniService>();
+
+// ── Autenticazione ─────────────────────────────────────────────────────────
+// Due schemi in parallelo:
+//  - Cookie  → UI Blazor (sessione del browser)
+//  - JwtBearer → API REST (header Authorization: Bearer <token>)
+builder.Services.AddAuthentication(options =>
+    {
+        // Lo schema di default per le pagine Blazor è il cookie.
+        options.DefaultScheme          = CookieAuthenticationDefaults.AuthenticationScheme;
+        options.DefaultChallengeScheme = CookieAuthenticationDefaults.AuthenticationScheme;
+    })
+    .AddCookie(CookieAuthenticationDefaults.AuthenticationScheme, options =>
+    {
+        options.LoginPath  = "/login";
+        options.LogoutPath = "/logout";
+        options.ExpireTimeSpan = TimeSpan.FromHours(8);
+    })
+    .AddJwtBearer(JwtBearerDefaults.AuthenticationScheme, options =>
+    {
+        var key = builder.Configuration["Jwt:Key"]!;
+        options.TokenValidationParameters = new TokenValidationParameters
+        {
+            ValidateIssuer           = true,
+            ValidateAudience         = true,
+            ValidateLifetime         = true,
+            ValidateIssuerSigningKey = true,
+            ValidIssuer              = builder.Configuration["Jwt:Issuer"],
+            ValidAudience            = builder.Configuration["Jwt:Audience"],
+            IssuerSigningKey         = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(key))
+        };
+    });
+
+builder.Services.AddAuthorization();
 
 // ── REST API ───────────────────────────────────────────────────────────────
 builder.Services.AddControllers();
@@ -30,9 +67,27 @@ builder.Services.AddSwaggerGen(c =>
 {
     c.SwaggerDoc("v1", new OpenApiInfo
     {
-        Title = "BeachBar API",
-        Version = "v1",
+        Title       = "BeachBar API",
+        Version     = "v1",
         Description = "API per la gestione degli ordini dello stabilimento balneare"
+    });
+
+    // Consente di inserire il token JWT direttamente da Swagger UI.
+    c.AddSecurityDefinition("Bearer", new Microsoft.OpenApi.OpenApiSecurityScheme
+    {
+        Name         = "Authorization",
+        Type         = Microsoft.OpenApi.SecuritySchemeType.Http,
+        Scheme       = "bearer",
+        BearerFormat = "JWT",
+        In           = Microsoft.OpenApi.ParameterLocation.Header,
+        Description  = "Inserisci il JWT ottenuto da POST /api/auth/login"
+    });
+    c.AddSecurityRequirement(_ => new Microsoft.OpenApi.OpenApiSecurityRequirement
+    {
+        {
+            new Microsoft.OpenApi.OpenApiSecuritySchemeReference("Bearer", null),
+            new List<string>()
+        }
     });
 });
 
@@ -49,7 +104,6 @@ app.UseStatusCodePagesWithReExecute("/not-found", createScopeForStatusCodePages:
 app.UseHttpsRedirection();
 
 // ── Swagger UI ─────────────────────────────────────────────────────────────
-// Disponibile su /swagger — solo per esplorare e testare le API dal browser.
 app.UseSwagger();
 app.UseSwaggerUI(c =>
 {
@@ -57,10 +111,13 @@ app.UseSwaggerUI(c =>
     c.RoutePrefix = "swagger";
 });
 
+app.UseAuthentication();
+app.UseAuthorization();
 app.UseAntiforgery();
 
 // ── Routing ────────────────────────────────────────────────────────────────
 app.MapStaticAssets();
+app.MapRazorPages();
 app.MapRazorComponents<App>()
     .AddInteractiveServerRenderMode();
 
