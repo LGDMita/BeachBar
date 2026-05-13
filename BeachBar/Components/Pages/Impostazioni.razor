@@ -1,0 +1,271 @@
+﻿@page "/impostazioni"
+@inject BeachBar.Infrastructure.Services.BeachBarService Service
+@inject NavigationManager Nav
+
+<div class="dashboard">
+    <button class="btn-torna" @onclick="TornaDashboard">← Dashboard</button>
+    <h1 class="titolo">⚙️ Impostazioni</h1>
+
+    <div class="tabs-impostazioni">
+        <button class="tab @(sezione == "spiaggia" ? "tab-attivo" : "")" @onclick='() => sezione = "spiaggia"'>🏖️ Spiaggia</button>
+        <button class="tab @(sezione == "prodotti" ? "tab-attivo" : "")" @onclick='() => sezione = "prodotti"'>🍹 Prodotti</button>
+        <button class="tab @(sezione == "gestione" ? "tab-attivo" : "")" @onclick='() => sezione = "gestione"'>🔧 Gestione</button>
+    </div>
+
+    @if (sezione == "spiaggia")
+    {
+        <div class="sezione-card">
+            <h3>Configurazione ombrelloni</h3>
+            <div class="form-riga">
+                <label>Numero ombrelloni</label>
+                <input type="number" class="input-numero" @bind="numOmbrelloni" min="1" max="100" />
+            </div>
+            <div class="form-riga">
+                <label>Colonne nella griglia</label>
+                <input type="number" class="input-numero" @bind="numColonne" min="2" max="8" />
+            </div>
+            <button class="btn-salva" @onclick="SalvaOmbrelloni">Salva configurazione</button>
+            @if (msgSpiaggia != null)
+            {
+                <p class="msg-ok">@msgSpiaggia</p>
+            }
+        </div>
+    }
+
+    @if (sezione == "prodotti")
+    {
+        <div class="sezione-card">
+            <h3>Categorie</h3>
+            <div class="lista-categorie">
+                @foreach (var cat in categorie)
+                {
+                    <div class="riga-categoria">
+                        @if (categoriaInModifica == cat)
+                        {
+                            <input class="input-inline" @bind="nuovoNomeCategoria" />
+                            <button class="btn-sm btn-ok" @onclick="() => SalvaCategoria(cat)">✓</button>
+                            <button class="btn-sm btn-annulla" @onclick="() => categoriaInModifica = null">✕</button>
+                        }
+                        else
+                        {
+                            <span class="cat-nome">@cat</span>
+                            <button class="btn-sm btn-modifica" @onclick="() => ModificaCategoria(cat)">✏️</button>
+                            <button class="btn-sm btn-elimina" @onclick="() => ConfermaEliminaCategoria(cat)">🗑️</button>
+                        }
+                    </div>
+                }
+            </div>
+
+            @if (confermaCancellaCategoria != null)
+            {
+                <div class="alert-conferma">
+                    <p>Eliminare la categoria <strong>@confermaCancellaCategoria</strong> e tutti i suoi prodotti?</p>
+                    <button class="btn-conferma-si" @onclick="EliminaCategoria">Sì, elimina</button>
+                    <button class="btn-conferma-no" @onclick="() => confermaCancellaCategoria = null">Annulla</button>
+                </div>
+            }
+
+            <hr />
+
+            <h3>Prodotti</h3>
+
+            <div class="form-nuovo-prodotto">
+                <input class="input-testo" placeholder="Nome" @bind="nuovoProdottoNome" />
+                <input type="number" class="input-numero" placeholder="Prezzo" @bind="nuovoProdottoPrezzo" step="0.50" />
+                <select class="input-select" @bind="nuovoProdottoCategoria">
+                    @foreach (var cat in categorie)
+                    {
+                        <option value="@cat">@cat</option>
+                    }
+                </select>
+                <button class="btn-salva" @onclick="AggiuntaProdotto">+ Aggiungi</button>
+            </div>
+
+            <table class="tabella" style="margin-top:16px">
+                <thead>
+                    <tr>
+                        <th>Nome</th>
+                        <th>Prezzo</th>
+                        <th>Categoria</th>
+                        <th>Disponibile</th>
+                        <th></th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var p in prodotti)
+                    {
+                        <tr>
+                            @if (prodottoInModifica == p.Id)
+                            {
+                                <td><input class="input-inline" @bind="editNome" /></td>
+                                <td><input type="number" class="input-inline" @bind="editPrezzo" step="0.50" /></td>
+                                <td>
+                                    <select class="input-inline" @bind="editCategoria">
+                                        @foreach (var cat in categorie)
+                                        {
+                                            <option value="@cat">@cat</option>
+                                        }
+                                    </select>
+                                </td>
+                                <td><input type="checkbox" @bind="editDisponibile" /></td>
+                                <td>
+                                    <button class="btn-sm btn-ok" @onclick="() => SalvaProdotto(p.Id)">✓</button>
+                                    <button class="btn-sm btn-annulla" @onclick="() => prodottoInModifica = null">✕</button>
+                                </td>
+                            }
+                            else
+                            {
+                                <td>@p.Nome</td>
+                                <td>€ @p.Prezzo.ToString("0.00")</td>
+                                <td>@p.Categoria</td>
+                                <td>@(p.Disponibile ? "✓" : "—")</td>
+                                <td>
+                                    <button class="btn-sm btn-modifica" @onclick="() => ModificaProdotto(p)">✏️</button>
+                                    <button class="btn-sm btn-elimina" @onclick="() => EliminaProdotto(p.Id)">🗑️</button>
+                                </td>
+                            }
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    }
+
+    @if (sezione == "gestione")
+    {
+        <div class="sezione-card">
+            <h3>Reset giornaliero</h3>
+            <p>Chiude tutte le sessioni aperte e azzera gli ombrelloni occupati. Usa questa funzione a fine giornata se necessario.</p>
+
+            @if (!confermaReset)
+            {
+                <button class="btn-chiudi" @onclick="() => confermaReset = true">Reset totali</button>
+            }
+            else
+            {
+                <div class="alert-conferma">
+                    <p>Sei sicuro? Tutte le sessioni aperte verranno chiuse.</p>
+                    <button class="btn-conferma-si" @onclick="EseguiReset">Sì, resetta</button>
+                    <button class="btn-conferma-no" @onclick="() => confermaReset = false">Annulla</button>
+                </div>
+            }
+
+            @if (msgReset != null)
+            {
+                <p class="msg-ok">@msgReset</p>
+            }
+        </div>
+    }
+</div>
+
+@code {
+    private void TornaDashboard() => Nav.NavigateTo("/");
+
+    private string sezione = "spiaggia";
+
+    // Spiaggia
+    private int numOmbrelloni;
+    private int numColonne;
+    private string? msgSpiaggia;
+
+    // Prodotti
+    private List<BeachBar.Core.Entities.Prodotto> prodotti = new();
+    private List<string> categorie = new();
+    private string? categoriaInModifica;
+    private string? nuovoNomeCategoria;
+    private string? confermaCancellaCategoria;
+    private string nuovoProdottoNome = "";
+    private decimal nuovoProdottoPrezzo;
+    private string nuovoProdottoCategoria = "";
+    private int? prodottoInModifica;
+    private string editNome = "";
+    private decimal editPrezzo;
+    private string editCategoria = "";
+    private bool editDisponibile;
+
+    // Gestione
+    private bool confermaReset;
+    private string? msgReset;
+
+    protected override async Task OnInitializedAsync()
+    {
+        var imp = await Service.GetImpostazioniAsync();
+        numOmbrelloni = imp.NumeroOmbrelloni;
+        numColonne = imp.NumeroColonne;
+        await CaricaProdotti();
+    }
+
+    private async Task CaricaProdotti()
+    {
+        prodotti = await Service.GetTuttiProdottiAsync();
+        categorie = await Service.GetCategorieAsync();
+    }
+
+    private async Task SalvaOmbrelloni()
+    {
+        await Service.AggiornaOmbrelloniAsync(numOmbrelloni);
+        await Service.AggiornaColumeAsync(numColonne);
+        msgSpiaggia = "Configurazione salvata.";
+    }
+
+    private void ModificaCategoria(string cat)
+    {
+        categoriaInModifica = cat;
+        nuovoNomeCategoria = cat;
+    }
+
+    private async Task SalvaCategoria(string vecchia)
+    {
+        if (!string.IsNullOrWhiteSpace(nuovoNomeCategoria))
+            await Service.RinominaCategoriaAsync(vecchia, nuovoNomeCategoria!);
+        categoriaInModifica = null;
+        await CaricaProdotti();
+    }
+
+    private void ConfermaEliminaCategoria(string cat) => confermaCancellaCategoria = cat;
+
+    private async Task EliminaCategoria()
+    {
+        await Service.EliminaCategoriaAsync(confermaCancellaCategoria!);
+        confermaCancellaCategoria = null;
+        await CaricaProdotti();
+    }
+
+    private async Task AggiuntaProdotto()
+    {
+        if (string.IsNullOrWhiteSpace(nuovoProdottoNome)) return;
+        await Service.AggiuntaProdottoAsync(nuovoProdottoNome, nuovoProdottoPrezzo, nuovoProdottoCategoria);
+        nuovoProdottoNome = "";
+        nuovoProdottoPrezzo = 0;
+        await CaricaProdotti();
+    }
+
+    private void ModificaProdotto(BeachBar.Core.Entities.Prodotto p)
+    {
+        prodottoInModifica = p.Id;
+        editNome = p.Nome;
+        editPrezzo = p.Prezzo;
+        editCategoria = p.Categoria;
+        editDisponibile = p.Disponibile;
+    }
+
+    private async Task SalvaProdotto(int id)
+    {
+        await Service.AggiornaProdottoAsync(id, editNome, editPrezzo, editCategoria, editDisponibile);
+        prodottoInModifica = null;
+        await CaricaProdotti();
+    }
+
+    private async Task EliminaProdotto(int id)
+    {
+        await Service.EliminaProdottoAsync(id);
+        await CaricaProdotti();
+    }
+
+    private async Task EseguiReset()
+    {
+        await Service.ResetTotaliAsync();
+        confermaReset = false;
+        msgReset = "Reset completato.";
+    }
+}

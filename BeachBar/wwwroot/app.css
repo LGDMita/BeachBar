@@ -27,3 +27,163 @@ h1:focus {
 .darker-border-checkbox.form-check-input {
     border-color: #929292;
 }
+
+/*Luigi*/
+
+.tabs-impostazioni {
+    display: flex;
+    gap: 10px;
+    margin-bottom: 24px;
+    flex-wrap: wrap;
+}
+
+.sezione-card {
+    background: #f8f9fa;
+    border-radius: 20px;
+    padding: 24px;
+}
+
+.form-riga {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    margin-bottom: 16px;
+}
+
+    .form-riga label {
+        width: 200px;
+        font-weight: bold;
+    }
+
+.input-numero {
+    padding: 10px;
+    font-size: 1rem;
+    border: 2px solid #ccc;
+    border-radius: 10px;
+    width: 100px;
+}
+
+.input-testo {
+    padding: 10px;
+    font-size: 1rem;
+    border: 2px solid #ccc;
+    border-radius: 10px;
+    flex: 1;
+}
+
+.input-select {
+    padding: 10px;
+    font-size: 1rem;
+    border: 2px solid #ccc;
+    border-radius: 10px;
+}
+
+.input-inline {
+    padding: 6px 10px;
+    font-size: 0.9rem;
+    border: 2px solid #ccc;
+    border-radius: 8px;
+    width: 100%;
+}
+
+.btn-salva {
+    padding: 12px 24px;
+    background: #007bff;
+    color: white;
+    border: none;
+    border-radius: 12px;
+    font-size: 1rem;
+    cursor: pointer;
+    margin-top: 8px;
+}
+
+.msg-ok {
+    color: #28a745;
+    font-weight: bold;
+    margin-top: 12px;
+}
+
+.lista-categorie {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    margin-bottom: 16px;
+}
+
+.riga-categoria {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 10px;
+    background: white;
+    border-radius: 10px;
+}
+
+.cat-nome {
+    flex: 1;
+    font-weight: bold;
+}
+
+.btn-sm {
+    padding: 6px 12px;
+    border: none;
+    border-radius: 8px;
+    cursor: pointer;
+    font-size: 0.9rem;
+}
+
+.btn-modifica {
+    background: #e7f3ff;
+    color: #007bff;
+}
+
+.btn-elimina {
+    background: #f8d7da;
+    color: #721c24;
+}
+
+.btn-ok {
+    background: #d4edda;
+    color: #155724;
+}
+
+.btn-annulla {
+    background: #f8f9fa;
+    color: #555;
+}
+
+.form-nuovo-prodotto {
+    display: flex;
+    gap: 10px;
+    align-items: center;
+    flex-wrap: wrap;
+}
+
+.alert-conferma {
+    background: #fff3cd;
+    border-radius: 12px;
+    padding: 16px;
+    margin-top: 16px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    flex-wrap: wrap;
+}
+
+.btn-conferma-si {
+    padding: 10px 20px;
+    background: #dc3545;
+    color: white;
+    border: none;
+    border-radius: 10px;
+    cursor: pointer;
+}
+
+.btn-conferma-no {
+    padding: 10px 20px;
+    background: #6c757d;
+    color: white;
+    border: none;
+    border-radius: 10px;
+    cursor: pointer;
+}

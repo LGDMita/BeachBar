@@ -58,7 +58,8 @@
 }
 
 .nome-cliente {
-    font-size: 1.1rem;
+    font-size: 2rem;
+    font-weight: bold;
     color: #555;
     margin-bottom: 16px;
 }

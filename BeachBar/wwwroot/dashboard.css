@@ -81,3 +81,23 @@
     background-color: #f8d7da;
     color: #721c24;
 }
+
+.header-dashboard {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 30px;
+}
+
+    .header-dashboard .titolo {
+        margin-bottom: 0;
+    }
+
+.btn-impostazioni {
+    padding: 10px 20px;
+    background: #f8f9fa;
+    border: 2px solid #dee2e6;
+    border-radius: 12px;
+    font-size: 1rem;
+    cursor: pointer;
+}

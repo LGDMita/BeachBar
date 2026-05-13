@@ -3,7 +3,10 @@
 @inject NavigationManager Nav
 
 <div class="dashboard">
-    <h1 class="titolo">🏖️ Beach Bar</h1>
+    <div class="header-dashboard">
+        <h1 class="titolo">🏖️ Beach Bar</h1>
+        <button class="btn-impostazioni" @onclick='() => Nav.NavigateTo("/impostazioni")'>⚙️ Impostazioni</button>
+    </div>
 
     <div class="statistiche">
         <div class="stat-card">
@@ -26,7 +29,7 @@
     }
     else
     {
-        <div class="griglia">
+        <div class="griglia" style="grid-template-columns: repeat(@colonne, 1fr);">
             @foreach (var o in ombrelloni)
             {
                 <button class="ombrellone @(o.Occupato ? "occupato" : "libero")"
@@ -45,6 +48,8 @@
     private decimal incassato;
     private int ombrelloniAttivi;
 
+    private int colonne = 4;
+
     protected override async Task OnInitializedAsync()
     {
         ombrelloni = await Service.GetOmbrelloniAsync();
@@ -52,6 +57,8 @@
         aperto = stats.aperto;
         incassato = stats.incassato;
         ombrelloniAttivi = stats.ombrelloniAttivi;
+        var imp = await Service.GetImpostazioniAsync();
+        colonne = imp.NumeroColonne;
     }
 
     private void Vai(int id) => Nav.NavigateTo("/ombrellone/" + id);

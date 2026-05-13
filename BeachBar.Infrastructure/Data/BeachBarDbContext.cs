@@ -11,6 +11,7 @@ public class BeachBarDbContext : DbContext
     public DbSet<Sessione> Sessioni { get; set; }
     public DbSet<Prodotto> Prodotti { get; set; }
     public DbSet<Consumazione> Consumazioni { get; set; }
+    public DbSet<ImpostazioniSpiaggia> ImpostazioniSpiaggia { get; set; }
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -33,6 +34,10 @@ public class BeachBarDbContext : DbContext
             new Prodotto { Id = 9, Nome = "Tramezzino", Prezzo = 2.50m, Disponibile = true, Categoria = "Cibo" },
             new Prodotto { Id = 10, Nome = "Piadina", Prezzo = 4.50m, Disponibile = true, Categoria = "Cibo" },
             new Prodotto { Id = 11, Nome = "Gelato", Prezzo = 2.50m, Disponibile = true, Categoria = "Cibo" }
+        );
+
+        modelBuilder.Entity<ImpostazioniSpiaggia>().HasData(
+            new ImpostazioniSpiaggia { Id = 1, NumeroOmbrelloni = 20, NumeroColonne = 4 }
         );
     }
 }
