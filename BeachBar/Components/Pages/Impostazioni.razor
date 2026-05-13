@@ -134,18 +134,41 @@
     @if (sezione == "gestione")
     {
         <div class="sezione-card">
-            <h3>Reset giornaliero</h3>
-            <p>Chiude tutte le sessioni aperte e azzera gli ombrelloni occupati. Usa questa funzione a fine giornata se necessario.</p>
+            <h3>Contatori Dashboard</h3>
+            <p>Azzera i contatori dell'incasso odierno nella dashboard. I dati non verranno cancellati e resteranno consultabili nello storico.</p>
 
-            @if (!confermaReset)
+            @if (!confermaResetVisivo)
             {
-                <button class="btn-chiudi" @onclick="() => confermaReset = true">Reset totali</button>
+                <button class="btn-chiudi" style="background-color: #ffc107; color: #212529;" @onclick="() => confermaResetVisivo = true">Azzera contatori</button>
             }
             else
             {
                 <div class="alert-conferma">
-                    <p>Sei sicuro? Tutte le sessioni aperte verranno chiuse.</p>
-                    <button class="btn-conferma-si" @onclick="EseguiReset">Sì, resetta</button>
+                    <p>Confermi l'azzeramento visivo dei totali?</p>
+                    <button class="btn-conferma-si" @onclick="EseguiResetVisivo">Sì, azzera</button>
+                    <button class="btn-conferma-no" @onclick="() => confermaResetVisivo = false">Annulla</button>
+                </div>
+            }
+
+            @if (msgResetVisivo != null)
+            {
+                <p class="msg-ok">@msgResetVisivo</p>
+            }
+
+            <hr style="margin: 30px 0;" />
+
+            <h3>Reset giornaliero (Forzato)</h3>
+            <p>Chiude tutte le sessioni aperte e libera tutti gli ombrelloni occupati. Usa questa funzione solo a fine giornata.</p>
+
+            @if (!confermaReset)
+            {
+                <button class="btn-chiudi" @onclick="() => confermaReset = true">Reset totale sessioni</button>
+            }
+            else
+            {
+                <div class="alert-conferma">
+                    <p>Sei sicuro? Tutte le sessioni attive verranno chiuse forzatamente.</p>
+                    <button class="btn-conferma-si" @onclick="EseguiReset">Sì, resetta tutto</button>
                     <button class="btn-conferma-no" @onclick="() => confermaReset = false">Annulla</button>
                 </div>
             }
@@ -186,6 +209,8 @@
     // Gestione
     private bool confermaReset;
     private string? msgReset;
+    private bool confermaResetVisivo;
+    private string? msgResetVisivo;
 
     protected override async Task OnInitializedAsync()
     {
@@ -266,6 +291,13 @@
     {
         await Service.ResetTotaliAsync();
         confermaReset = false;
-        msgReset = "Reset completato.";
+        msgReset = "Reset sessioni completato.";
+    }
+
+    private async Task EseguiResetVisivo()
+    {
+        await Service.ResetVisivoStatisticheAsync();
+        confermaResetVisivo = false;
+        msgResetVisivo = "Contatori dashboard azzerati.";
     }
 }

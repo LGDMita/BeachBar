@@ -1,0 +1,87 @@
+﻿@page "/storico"
+@using BeachBar.Core.Entities
+@inject BeachBar.Infrastructure.Services.BeachBarService Service
+@inject NavigationManager Nav
+@inject IJSRuntime JS
+
+<link rel="stylesheet" href="css/storico.css" />
+
+<div class="storico-container">
+    <div class="header-storico">
+        <h1 class="titolo-storico">📋 Archivio Storico</h1>
+        <button class="btn-chiudi-soft" @onclick='() => Nav.NavigateTo("/")'>Chiudi</button>
+    </div>
+
+    <div class="storico-card">
+        @if (sessioni == null)
+        {
+            <div class="empty-state">Caricamento in corso...</div>
+        }
+        else if (!sessioni.Any())
+        {
+            <div class="empty-state">
+                <div style="font-size: 3rem; margin-bottom: 1rem;">🏖️</div>
+                <p>Nessuno scontrino in archivio.</p>
+            </div>
+        }
+        else
+        {
+            <table class="tabella-storico">
+                <thead>
+                    <tr>
+                        <th>Periodo</th>
+                        <th>Postazione</th>
+                        <th>Cliente</th>
+                        <th>Totale Incassato</th>
+                        <th style="text-align: right;">Gestione</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var s in sessioni)
+                    {
+                        <tr>
+                            <td>
+                                <div class="date-stack">
+                                    <span class="date-main">@s.Chiusura?.ToLocalTime().ToString("dd MMM yyyy")</span>
+                                    <span class="date-sub">ore @s.Chiusura?.ToLocalTime().ToString("HH:mm")</span>
+                                </div>
+                            </td>
+                            <td>
+                                <span class="badge-item">Ombrellone #@(s.Ombrellone?.Numero ?? s.OmbrelloneId)</span>
+                            </td>
+                            <td>
+                                <span style="font-weight: 500;">@(string.IsNullOrEmpty(s.NomeCliente) ? "Occasionale" : s.NomeCliente)</span>
+                            </td>
+                            <td>
+                                <span class="amount">€ @s.Consumazioni.Sum(c => c.Quantita * c.Prodotto.Prezzo).ToString("0.00")</span>
+                            </td>
+                            <td style="text-align: right;">
+                                <button class="btn-action-delete" @onclick="() => Elimina(s.Id)">
+                                    Elimina
+                                </button>
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        }
+    </div>
+</div>
+
+@code {
+    private List<Sessione>? sessioni;
+
+    protected override async Task OnInitializedAsync() => await CaricaDati();
+
+    private async Task CaricaDati() => sessioni = await Service.GetStoricoSessioniAsync();
+
+    private async Task Elimina(int id)
+    {
+        bool confermato = await JS.InvokeAsync<bool>("confirm", "Eliminare definitivamente questo scontrino?");
+        if (confermato)
+        {
+            await Service.EliminaSessioneStoricoAsync(id);
+            await CaricaDati();
+        }
+    }
+}

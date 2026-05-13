@@ -96,7 +96,8 @@ public class BeachBarService
 
     public async Task<(decimal aperto, decimal incassato, int ombrelloniAttivi)> GetStatisticheAsync()
     {
-        var oggi = DateTime.UtcNow.Date;
+        var imp = await GetImpostazioniAsync();
+        var dataInizioFiltro = imp.UltimoResetStatistiche ?? DateTime.UtcNow.Date;
 
         var aperto = await _db.Sessioni
             .Where(s => !s.Chiusa)
@@ -104,13 +105,20 @@ public class BeachBarService
             .SumAsync(c => (decimal?)c.Quantita * c.Prodotto.Prezzo) ?? 0;
 
         var incassato = await _db.Sessioni
-            .Where(s => s.Chiusa && s.Chiusura >= oggi)
+            .Where(s => s.Chiusa && s.Chiusura >= dataInizioFiltro)
             .SelectMany(s => s.Consumazioni)
             .SumAsync(c => (decimal?)c.Quantita * c.Prodotto.Prezzo) ?? 0;
 
         var attivi = await _db.Ombrelloni.CountAsync(o => o.Occupato);
 
         return (aperto, incassato, attivi);
+    }
+
+    public async Task ResetVisivoStatisticheAsync()
+    {
+        var imp = await _db.ImpostazioniSpiaggia.FirstAsync(i => i.Id == 1);
+        imp.UltimoResetStatistiche = DateTime.UtcNow;
+        await _db.SaveChangesAsync();
     }
 
     public async Task<ImpostazioniSpiaggia> GetImpostazioniAsync()
@@ -230,5 +238,24 @@ public class BeachBarService
 
         _db.Sessioni.Remove(sessione);
         await _db.SaveChangesAsync();
+    }
+
+    public async Task<List<Sessione>> GetStoricoSessioniAsync()
+    => await _db.Sessioni
+        .Include(s => s.Consumazioni)
+        .ThenInclude(c => c.Prodotto)
+        .Include(s => s.Ombrellone)
+        .Where(s => s.Chiusa)
+        .OrderByDescending(s => s.Chiusura)
+        .ToListAsync();
+
+    public async Task EliminaSessioneStoricoAsync(int id)
+    {
+        var s = await _db.Sessioni.FindAsync(id);
+        if (s != null)
+        {
+            _db.Sessioni.Remove(s);
+            await _db.SaveChangesAsync();
+        }
     }
 }

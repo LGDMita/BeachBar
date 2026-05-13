@@ -1,0 +1,157 @@
+﻿:root {
+    --primary: #2563eb;
+    --background: #f8fafc;
+    --surface: #ffffff;
+    --text-main: #1e293b;
+    --text-muted: #64748b;
+    --success: #10b981;
+    --danger: #ef4444;
+    --border: #e2e8f0;
+    --shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+}
+
+.storico-container {
+    padding: 40px 20px;
+    max-width: 1000px;
+    margin: 0 auto;
+    background-color: var(--background);
+    min-height: 100vh;
+}
+
+.header-storico {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 32px;
+}
+
+.titolo-storico {
+    font-size: 24px;
+    font-weight: 800;
+    color: var(--text-main);
+    letter-spacing: -0.025em;
+    margin: 0;
+}
+
+.btn-chiudi-soft {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    padding: 10px 20px;
+    border-radius: 10px;
+    font-weight: 600;
+    color: var(--text-main);
+    cursor: pointer;
+    box-shadow: 0 1px 2px rgba(0,0,0,0.05);
+    transition: all 0.2s ease;
+}
+
+    .btn-chiudi-soft:hover {
+        background: #f1f5f9;
+        transform: translateY(-1px);
+    }
+
+/* Card Contenitore */
+.storico-card {
+    background: var(--surface);
+    border-radius: 20px;
+    border: 1px solid var(--border);
+    box-shadow: var(--shadow);
+    overflow: hidden;
+}
+
+.tabella-storico {
+    width: 100%;
+    border-collapse: collapse;
+    background: var(--surface);
+}
+
+    .tabella-storico th {
+        background: #f1f5f9;
+        padding: 18px 24px;
+        text-align: left;
+        font-size: 12px;
+        font-weight: 700;
+        text-transform: uppercase;
+        color: var(--text-muted);
+        letter-spacing: 0.05em;
+        border-bottom: 1px solid var(--border);
+    }
+
+    .tabella-storico td {
+        padding: 20px 24px;
+        border-bottom: 1px solid var(--border);
+        font-size: 14px;
+        color: var(--text-main);
+        vertical-align: middle;
+    }
+
+    .tabella-storico tr:last-child td {
+        border-bottom: none;
+    }
+
+    .tabella-storico tr:hover {
+        background-color: #f8fafc;
+    }
+
+/* Dettaglio Data */
+.date-stack {
+    display: flex;
+    flex-direction: column;
+    line-height: 1.4;
+}
+
+.date-main {
+    font-weight: 600;
+    color: var(--text-main);
+}
+
+.date-sub {
+    font-size: 12px;
+    color: var(--text-muted);
+}
+
+/* Badge Ombrellone */
+.badge-item {
+    display: inline-flex;
+    align-items: center;
+    background: #eff6ff;
+    color: #1e40af;
+    padding: 6px 12px;
+    border-radius: 8px;
+    font-weight: 700;
+    font-size: 13px;
+    border: 1px solid #dbeafe;
+}
+
+/* Prezzo */
+.amount {
+    font-family: 'JetBrains Mono', 'Cascadia Code', monospace;
+    font-weight: 700;
+    color: var(--success);
+    font-size: 16px;
+}
+
+/* Bottone Elimina */
+.btn-action-delete {
+    background: #fff1f2;
+    color: var(--danger);
+    border: 1px solid #fee2e2;
+    padding: 8px 16px;
+    border-radius: 8px;
+    font-weight: 600;
+    font-size: 13px;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+    .btn-action-delete:hover {
+        background: var(--danger);
+        color: white;
+        border-color: var(--danger);
+    }
+
+.empty-state {
+    padding: 100px 0;
+    text-align: center;
+    color: var(--text-muted);
+}

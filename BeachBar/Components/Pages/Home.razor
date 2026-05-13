@@ -5,7 +5,13 @@
 <div class="dashboard">
     <div class="header-dashboard">
         <h1 class="titolo">🏖️ Beach Bar</h1>
-        <button class="btn-impostazioni" @onclick='() => Nav.NavigateTo("/impostazioni")'>⚙️ Impostazioni</button>
+        <div class="header-azioni" style="display: flex; gap: 10px;">
+            <button class="btn-storico" @onclick='() => Nav.NavigateTo("/storico")'
+                    style="background-color: #6c757d; color: white; border: none; padding: 10px 15px; border-radius: 8px; cursor: pointer; display: flex; align-items: center; gap: 5px;">
+                📋 Storico
+            </button>
+            <button class="btn-impostazioni" @onclick='() => Nav.NavigateTo("/impostazioni")'>⚙️ Impostazioni</button>
+        </div>
     </div>
 
     <div class="statistiche">
