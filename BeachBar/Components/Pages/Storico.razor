@@ -54,7 +54,10 @@
                                 </div>
                             </td>
                             <td>
-                                <span class="badge-item">Ombrellone #@(s.Ombrellone?.Numero ?? s.OmbrelloneId)</span>
+                                <div class="date-stack">
+                                    <span class="badge-item">Ombrellone #@(s.Ombrellone?.Numero ?? s.OmbrelloneId)</span>
+                                    <span class="date-sub">Sessione #@s.Id</span>
+                                </div>
                             </td>
                             <td>
                                 <span style="font-weight: 500;">@(string.IsNullOrEmpty(s.NomeCliente) ? "Occasionale" : s.NomeCliente)</span>

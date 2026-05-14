@@ -6,7 +6,6 @@ using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
-using Microsoft.OpenApi;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -34,12 +33,12 @@ builder.Services.AddScoped<IImpostazioniService, ImpostazioniService>();
 builder.Services.AddAuthentication(options =>
     {
         // Lo schema di default per le pagine Blazor è il cookie.
-        options.DefaultScheme          = CookieAuthenticationDefaults.AuthenticationScheme;
+        options.DefaultScheme = CookieAuthenticationDefaults.AuthenticationScheme;
         options.DefaultChallengeScheme = CookieAuthenticationDefaults.AuthenticationScheme;
     })
     .AddCookie(CookieAuthenticationDefaults.AuthenticationScheme, options =>
     {
-        options.LoginPath  = "/login";
+        options.LoginPath = "/login";
         options.LogoutPath = "/logout";
         options.ExpireTimeSpan = TimeSpan.FromHours(8);
     })
@@ -48,13 +47,13 @@ builder.Services.AddAuthentication(options =>
         var key = builder.Configuration["Jwt:Key"]!;
         options.TokenValidationParameters = new TokenValidationParameters
         {
-            ValidateIssuer           = true,
-            ValidateAudience         = true,
-            ValidateLifetime         = true,
+            ValidateIssuer = true,
+            ValidateAudience = true,
+            ValidateLifetime = true,
             ValidateIssuerSigningKey = true,
-            ValidIssuer              = builder.Configuration["Jwt:Issuer"],
-            ValidAudience            = builder.Configuration["Jwt:Audience"],
-            IssuerSigningKey         = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(key))
+            ValidIssuer = builder.Configuration["Jwt:Issuer"],
+            ValidAudience = builder.Configuration["Jwt:Audience"],
+            IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(key))
         };
     });
 
@@ -62,34 +61,6 @@ builder.Services.AddAuthorization();
 
 // ── REST API ───────────────────────────────────────────────────────────────
 builder.Services.AddControllers();
-builder.Services.AddEndpointsApiExplorer();
-builder.Services.AddSwaggerGen(c =>
-{
-    c.SwaggerDoc("v1", new OpenApiInfo
-    {
-        Title       = "BeachBar API",
-        Version     = "v1",
-        Description = "API per la gestione degli ordini dello stabilimento balneare"
-    });
-
-    // Consente di inserire il token JWT direttamente da Swagger UI.
-    c.AddSecurityDefinition("Bearer", new Microsoft.OpenApi.OpenApiSecurityScheme
-    {
-        Name         = "Authorization",
-        Type         = Microsoft.OpenApi.SecuritySchemeType.Http,
-        Scheme       = "bearer",
-        BearerFormat = "JWT",
-        In           = Microsoft.OpenApi.ParameterLocation.Header,
-        Description  = "Inserisci il JWT ottenuto da POST /api/auth/login"
-    });
-    c.AddSecurityRequirement(_ => new Microsoft.OpenApi.OpenApiSecurityRequirement
-    {
-        {
-            new Microsoft.OpenApi.OpenApiSecuritySchemeReference("Bearer", null),
-            new List<string>()
-        }
-    });
-});
 
 var app = builder.Build();
 
@@ -103,16 +74,6 @@ if (!app.Environment.IsDevelopment())
     app.UseHttpsRedirection();
 }
 
-app.UseStatusCodePagesWithReExecute("/not-found", createScopeForStatusCodePages: true);
-
-// ── Swagger UI ─────────────────────────────────────────────────────────────
-app.UseSwagger();
-app.UseSwaggerUI(c =>
-{
-    c.SwaggerEndpoint("/swagger/v1/swagger.json", "BeachBar API v1");
-    c.RoutePrefix = "swagger";
-});
-
 app.UseAuthentication();
 app.UseAuthorization();
 app.UseAntiforgery();
@@ -125,5 +86,7 @@ app.MapRazorComponents<App>()
 
 // MapControllers deve stare dopo MapRazorComponents per evitare conflitti di routing.
 app.MapControllers();
+
+app.MapFallback(() => Results.Redirect("/not-found"));
 
 app.Run();

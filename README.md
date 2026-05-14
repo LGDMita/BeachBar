@@ -1,6 +1,6 @@
 # BeachBar
 
-Applicazione web per la gestione degli ordini di uno stabilimento balneare. Permette di aprire sessioni per ombrellone, registrare le consumazioni, chiudere il conto e consultare lo storico. Include un frontend Blazor per uso interno e una REST API documentata con Swagger per integrazioni esterne, entrambi protetti da autenticazione.
+Applicazione web per la gestione degli ordini di uno stabilimento balneare. Permette di aprire sessioni per ombrellone, registrare le consumazioni, chiudere il conto e consultare lo storico. Include un frontend Blazor per uso interno e una REST API per integrazioni esterne, entrambi protetti da autenticazione.
 
 ---
 
@@ -15,7 +15,6 @@ Applicazione web per la gestione degli ordini di uno stabilimento balneare. Perm
 | Autenticazione UI | Cookie session (ASP.NET Core Cookie Auth) |
 | Autenticazione API | JWT Bearer (HS256) |
 | Hash password | BCrypt (work factor 12) |
-| Documentazione API | Swashbuckle / Swagger UI |
 | Linguaggio | C# 13, .NET 10 |
 
 ---
@@ -142,8 +141,6 @@ dotnet run --project BeachBar --launch-profile https
 | Login | `http://localhost:5286/login` |
 | Frontend Blazor | `http://localhost:5286` |
 | Frontend Blazor (HTTPS) | `https://localhost:7298` |
-| Swagger UI | `http://localhost:5286/swagger` |
-| Swagger UI (HTTPS) | `https://localhost:7298/swagger` |
 
 ---
 
@@ -185,7 +182,50 @@ GET /api/sessioni
 Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9...
 ```
 
-Su Swagger UI: clicca il pulsante **Authorize** in alto a destra, incolla il token nel campo `Bearer` e conferma. Da quel momento tutte le richieste inviate dall'interfaccia includeranno l'header di autorizzazione.
+Per testare le API usa Postman con la collection inclusa nel progetto. Vedi la sezione [Test con Postman](#test-con-postman) per i dettagli.
+
+---
+
+## Test con Postman
+
+Il file `BeachBar.postman_collection.json` nella root del progetto contiene tutte le request già configurate e pronte all'uso.
+
+### Importazione
+
+1. Apri Postman
+2. `File → Import` e seleziona `BeachBar.postman_collection.json`
+3. La collection apparirà con quattro cartelle: **Auth**, **Prodotti**, **Sessioni**, **Ordini**
+
+### Flusso di autenticazione
+
+**È sufficiente fare login una sola volta.** Il token JWT dura 8 ore (configurabile in `appsettings.json` con `Jwt:ExpiresMinutes`).
+
+1. Apri la cartella **Auth** ed esegui la request **Login**
+   - Username e password sono già precompilati (`admin` / `admin123`)
+   - Alla ricezione della risposta, uno script automatico nella tab *Tests* estrae il token e lo salva nella variabile di collection `{{token}}`
+2. Da questo momento puoi eseguire qualsiasi altra request — il token viene incluso automaticamente nell'header `Authorization: Bearer {{token}}` senza nessuna azione manuale
+3. Se il token scade (dopo 8 ore), ri-esegui semplicemente **Login**
+
+Lo script che salva il token è visibile nella tab **Tests** della request Login:
+
+```javascript
+var json = pm.response.json();
+pm.collectionVariables.set('token', json.token);
+```
+
+### Variabili di collection
+
+| Variabile | Valore iniziale | Descrizione |
+|---|---|---|
+| `baseUrl` | `https://localhost:7298` | URL base dell'applicazione. Cambialo se usi una porta diversa o un dominio pubblico. |
+| `token` | *(vuoto)* | Popolato automaticamente dopo il Login. Non modificarlo a mano. |
+
+### Note sulle request
+
+- Gli ID nelle URL (es. `/Sessioni/1`, `/Prodotti/1`) sono valori di esempio — sostituiscili con ID reali presenti nel tuo database
+- La request **POST apri sessione** richiede un `ombrelloneId` valido
+- La request **POST aggiungi ordine** richiede `prodottoId` e `quantita` (1–99)
+- **DELETE elimina ordine** richiede sia `sessioneId` che `ordineId`
 
 ---
 
@@ -245,7 +285,7 @@ BeachBar.Infrastructure/
 
 ## Endpoints REST API
 
-La documentazione interattiva completa è disponibile su Swagger UI all'avvio. Di seguito il riepilogo degli endpoint.
+Di seguito il riepilogo degli endpoint. Per testare, usa la collection Postman inclusa nella root del progetto.
 
 > Tutti gli endpoint tranne `POST /api/auth/login` richiedono il token JWT nell'header `Authorization: Bearer <token>`.
 
@@ -395,13 +435,9 @@ catch (Exception ex)
 }
 ```
 
-Tutti i codici di risposta possibili sono dichiarati con `[ProducesResponseType]` e visibili su Swagger UI.
+Tutti i codici di risposta possibili sono dichiarati con `[ProducesResponseType]`.
 
 **Blazor layer** — ogni componente mantiene una variabile `string? errore` mostrata come banner rosso nel template. Ogni metodo async azzera `errore` all'inizio, esegue la chiamata in un `try`, e imposta `errore` nel `catch`. La navigazione post-operazione (`Nav.NavigateTo`) è sempre dentro il `try`, così non avviene in caso di errore. I metodi helper interni (es. `CaricaProdotti`) non hanno `try-catch` proprio: le eccezioni risalgono al metodo chiamante che ha il contesto per gestirle.
-
-### Swagger / Swashbuckle
-
-Swagger offre una UI interattiva per esplorare e testare gli endpoint direttamente dal browser. Gli attributi `[ProducesResponseType]` sui controller documentano tutti i codici di risposta possibili. Il pulsante **Authorize** nella UI permette di inserire il JWT e testare gli endpoint protetti senza uscire dal browser.
 
 ---
 

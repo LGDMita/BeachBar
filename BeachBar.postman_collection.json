@@ -1,0 +1,153 @@
+{
+  "info": {
+    "name": "BeachBar API",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    { "key": "baseUrl", "value": "https://localhost:7298" },
+    { "key": "token",   "value": "" }
+  ],
+  "item": [
+    {
+      "name": "Auth",
+      "item": [
+        {
+          "name": "Login",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "var json = pm.response.json();",
+                  "pm.collectionVariables.set('token', json.token);"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "url": "{{baseUrl}}/api/auth/login",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"username\": \"admin\",\n  \"password\": \"admin123\"\n}"
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Prodotti",
+      "item": [
+        {
+          "name": "GET tutti i prodotti",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/api/Prodotti",
+            "auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{token}}" }] }
+          }
+        },
+        {
+          "name": "GET prodotto per ID",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/api/Prodotti/1",
+            "auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{token}}" }] }
+          }
+        },
+        {
+          "name": "GET prodotti per categoria",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/api/Prodotti/categoria/bevande",
+            "auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{token}}" }] }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Sessioni",
+      "item": [
+        {
+          "name": "GET tutte le sessioni",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/api/Sessioni",
+            "auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{token}}" }] }
+          }
+        },
+        {
+          "name": "GET sessioni aperte",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/api/Sessioni/aperte",
+            "auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{token}}" }] }
+          }
+        },
+        {
+          "name": "GET sessione per ID",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/api/Sessioni/1",
+            "auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{token}}" }] }
+          }
+        },
+        {
+          "name": "POST apri sessione",
+          "request": {
+            "method": "POST",
+            "url": "{{baseUrl}}/api/Sessioni",
+            "auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{token}}" }] },
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"ombrelloneId\": 1,\n  \"nomeCliente\": \"Mario Rossi\"\n}"
+            }
+          }
+        },
+        {
+          "name": "PUT chiudi sessione",
+          "request": {
+            "method": "PUT",
+            "url": "{{baseUrl}}/api/Sessioni/1/chiudi",
+            "auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{token}}" }] }
+          }
+        }
+      ]
+    },
+    {
+      "name": "Ordini",
+      "item": [
+        {
+          "name": "GET ordini di una sessione",
+          "request": {
+            "method": "GET",
+            "url": "{{baseUrl}}/api/Sessioni/1/ordini",
+            "auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{token}}" }] }
+          }
+        },
+        {
+          "name": "POST aggiungi ordine",
+          "request": {
+            "method": "POST",
+            "url": "{{baseUrl}}/api/Sessioni/1/ordini",
+            "auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{token}}" }] },
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"prodottoId\": 1,\n  \"quantita\": 2\n}"
+            }
+          }
+        },
+        {
+          "name": "DELETE elimina ordine",
+          "request": {
+            "method": "DELETE",
+            "url": "{{baseUrl}}/api/Sessioni/1/ordini/1",
+            "auth": { "type": "bearer", "bearer": [{ "key": "token", "value": "{{token}}" }] }
+          }
+        }
+      ]
+    }
+  ]
+}
