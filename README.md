@@ -1,6 +1,13 @@
 # BeachBar
 
-Applicazione web per la gestione degli ordini di uno stabilimento balneare. Permette di aprire sessioni per ombrellone, registrare le consumazioni, chiudere il conto e consultare lo storico. Include un frontend Blazor per uso interno e una REST API per integrazioni esterne, entrambi protetti da autenticazione.
+Applicazione web per il bar di uno stabilimento balneare. Il gestore può:
+
+- **aprire un conto** per ogni ombrellone quando il cliente ordina la prima volta
+- **aggiungere consumazioni** nel corso della giornata, senza chiudere il conto
+- **chiudere il conto** a fine servizio, con calcolo automatico del totale
+- **consultare lo storico** di tutti gli scontrini passati
+
+Include un **frontend Blazor** per l'operatività interna e una **REST API protetta da JWT** per integrazioni esterne (documentata con collection Postman).
 
 ---
 
