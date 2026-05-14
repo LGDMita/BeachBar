@@ -55,8 +55,8 @@ public class SessioniService : ISessioniService
 
     public async Task ApriSessioneAsync(int ombrelloneId, string? nomeCliente)
     {
-        var ombrellone = await _db.Ombrelloni.FindAsync(ombrelloneId);
-        if (ombrellone == null) return;
+        var ombrellone = await _db.Ombrelloni.FindAsync(ombrelloneId)
+            ?? throw new InvalidOperationException($"Ombrellone {ombrelloneId} non trovato.");
 
         ombrellone.Occupato = true;
         _db.Sessioni.Add(new Sessione
@@ -73,8 +73,8 @@ public class SessioniService : ISessioniService
     {
         var sessione = await _db.Sessioni
             .Include(s => s.Ombrellone)
-            .FirstOrDefaultAsync(s => s.Id == sessioneId);
-        if (sessione == null) return;
+            .FirstOrDefaultAsync(s => s.Id == sessioneId)
+            ?? throw new InvalidOperationException($"Sessione {sessioneId} non trovata.");
 
         sessione.Chiusa = true;
         sessione.Chiusura = DateTime.UtcNow;
@@ -86,8 +86,8 @@ public class SessioniService : ISessioniService
     {
         var sessione = await _db.Sessioni
             .Include(s => s.Ombrellone)
-            .FirstOrDefaultAsync(s => s.Id == sessioneId);
-        if (sessione == null) return;
+            .FirstOrDefaultAsync(s => s.Id == sessioneId)
+            ?? throw new InvalidOperationException($"Sessione {sessioneId} non trovata.");
 
         if (sessione.Ombrellone != null)
             sessione.Ombrellone.Occupato = false;
@@ -98,18 +98,20 @@ public class SessioniService : ISessioniService
 
     public async Task AggiornaNomeSessioneAsync(int sessioneId, string? nuovoNome)
     {
-        var sessione = await _db.Sessioni.FindAsync(sessioneId);
-        if (sessione != null)
-        {
-            sessione.NomeCliente = nuovoNome;
-            await _db.SaveChangesAsync();
-        }
+        var sessione = await _db.Sessioni.FindAsync(sessioneId)
+            ?? throw new InvalidOperationException($"Sessione {sessioneId} non trovata.");
+
+        sessione.NomeCliente = nuovoNome;
+        await _db.SaveChangesAsync();
     }
 
     public async Task EliminaSessioneStoricoAsync(int id)
     {
-        var s = await _db.Sessioni.FindAsync(id);
-        if (s != null) { _db.Sessioni.Remove(s); await _db.SaveChangesAsync(); }
+        var s = await _db.Sessioni.FindAsync(id)
+            ?? throw new InvalidOperationException($"Sessione {id} non trovata nello storico.");
+
+        _db.Sessioni.Remove(s);
+        await _db.SaveChangesAsync();
     }
 
     public async Task ResetTotaliAsync()

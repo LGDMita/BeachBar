@@ -10,19 +10,28 @@ public class ImpostazioniService : IImpostazioniService
 
     public ImpostazioniService(BeachBarDbContext db) => _db = db;
 
+    // FirstAsync lancerebbe InvalidOperationException con messaggio generico se il record manca.
+    // Questo helper usa FirstOrDefaultAsync e produce un errore leggibile che indica il problema reale.
+    private async Task<ImpostazioniSpiaggia> GetConfigAsync()
+    {
+        return await _db.ImpostazioniSpiaggia.FirstOrDefaultAsync(i => i.Id == 1)
+            ?? throw new InvalidOperationException(
+                "Configurazione spiaggia non trovata (Id=1). Verificare il seed del database.");
+    }
+
     public async Task<ImpostazioniSpiaggia> GetImpostazioniAsync()
-        => await _db.ImpostazioniSpiaggia.FirstAsync(i => i.Id == 1);
+        => await GetConfigAsync();
 
     public async Task AggiornaColumeAsync(int colonne)
     {
-        var imp = await _db.ImpostazioniSpiaggia.FirstAsync(i => i.Id == 1);
+        var imp = await GetConfigAsync();
         imp.NumeroColonne = colonne;
         await _db.SaveChangesAsync();
     }
 
     public async Task AggiornaOmbrelloniAsync(int numero)
     {
-        var imp = await _db.ImpostazioniSpiaggia.FirstAsync(i => i.Id == 1);
+        var imp = await GetConfigAsync();
         var attuali = await _db.Ombrelloni.CountAsync();
 
         if (numero > attuali)
@@ -44,7 +53,7 @@ public class ImpostazioniService : IImpostazioniService
 
     public async Task<(decimal aperto, decimal incassato, int ombrelloniAttivi)> GetStatisticheAsync()
     {
-        var imp = await GetImpostazioniAsync();
+        var imp = await GetConfigAsync();
         var dataInizioFiltro = imp.UltimoResetStatistiche ?? DateTime.UtcNow.Date;
 
         var aperto = await _db.Sessioni
@@ -64,7 +73,7 @@ public class ImpostazioniService : IImpostazioniService
 
     public async Task ResetVisivoStatisticheAsync()
     {
-        var imp = await _db.ImpostazioniSpiaggia.FirstAsync(i => i.Id == 1);
+        var imp = await GetConfigAsync();
         imp.UltimoResetStatistiche = DateTime.UtcNow;
         await _db.SaveChangesAsync();
     }

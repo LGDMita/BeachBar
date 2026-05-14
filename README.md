@@ -313,6 +313,7 @@ La documentazione interattiva completa è disponibile su Swagger UI all'avvio. D
 | `401 Unauthorized` | Token JWT assente, scaduto o non valido |
 | `404 Not Found` | La risorsa richiesta non esiste |
 | `409 Conflict` | Operazione non permessa nello stato attuale (es. sessione già chiusa, ombrellone già occupato) |
+| `500 Internal Server Error` | Errore imprevisto lato server (es. database irraggiungibile, constraint violation) |
 
 ---
 
@@ -364,9 +365,39 @@ I controller non contengono logica di business. Si limitano a: validare l'input,
 
 Le entità EF Core portano con sé navigation properties e stato di tracking che non devono uscire dalle API. I DTO (`ProdottoDto`, `SessioneDto`, `ConsumazioneDto`) sono plain object che espongono solo i campi utili al client, disaccoppiando la forma dell'API dallo schema del database.
 
-### Gestione degli errori esplicita
+### Gestione degli errori
 
-Ogni action gestisce esplicitamente i propri casi di errore: `404` se la risorsa non esiste, `409` se lo stato non permette l'operazione, `400` se il body non è valido. Non ci sono catch-all globali: ogni errore produce una risposta HTTP semanticamente corretta.
+La gestione degli errori segue un pattern a tre livelli: i servizi rilevano, i controller e i componenti Blazor gestiscono.
+
+**Service layer** — i metodi che operano su una singola risorsa lanciano `InvalidOperationException` se quella risorsa non esiste, invece di restituire silenziosamente. Le eccezioni si propagano al chiamante senza essere intercettate nel service stesso.
+
+```csharp
+var ombrellone = await _db.Ombrelloni.FindAsync(ombrelloneId)
+    ?? throw new InvalidOperationException($"Ombrellone {ombrelloneId} non trovato.");
+```
+
+I metodi di sola lettura restituiscono `null` quando la risorsa non esiste — il chiamante decide se è un errore in base al contesto. I metodi che operano su insiemi (`RinominaCategoriaAsync`, `EliminaCategoriaAsync`) non lanciano se il filtro non produce risultati: zero elementi affetti è un esito valido, non un errore.
+
+**Controller layer** — ogni action gestisce i casi attesi con i codici HTTP appropriati (`404`, `409`, `400`) e cattura le eccezioni impreviste in un `catch` generico che logga con `LogError` e restituisce `500` senza esporre dettagli interni al client. La validazione `ModelState` avviene prima del `try` perché è sincrona e non coinvolge I/O.
+
+```csharp
+if (!ModelState.IsValid)
+    return BadRequest(ModelState);
+
+try
+{
+    // logica e null-check con 404/409
+}
+catch (Exception ex)
+{
+    _logger.LogError(ex, "...");
+    return StatusCode(500, "Errore interno del server.");
+}
+```
+
+Tutti i codici di risposta possibili sono dichiarati con `[ProducesResponseType]` e visibili su Swagger UI.
+
+**Blazor layer** — ogni componente mantiene una variabile `string? errore` mostrata come banner rosso nel template. Ogni metodo async azzera `errore` all'inizio, esegue la chiamata in un `try`, e imposta `errore` nel `catch`. La navigazione post-operazione (`Nav.NavigateTo`) è sempre dentro il `try`, così non avviene in caso di errore. I metodi helper interni (es. `CaricaProdotti`) non hanno `try-catch` proprio: le eccezioni risalgono al metodo chiamante che ha il contesto per gestirle.
 
 ### Swagger / Swashbuckle
 

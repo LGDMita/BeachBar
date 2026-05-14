@@ -15,6 +15,13 @@
         <button class="tab @(sezione == "gestione" ? "tab-attivo" : "")" @onclick='() => sezione = "gestione"'>🔧 Gestione</button>
     </div>
 
+    @if (errore != null)
+    {
+        <div style="background:#f8d7da; color:#721c24; border:1px solid #f5c6cb; padding:10px 14px; border-radius:8px; margin:12px 0;">
+            ⚠️ @errore
+        </div>
+    }
+
     @if (sezione == "spiaggia")
     {
         <div class="sezione-card">
@@ -221,14 +228,26 @@
     private bool confermaResetVisivo;
     private string? msgResetVisivo;
 
+    // Errore generico mostrato sopra alla sezione attiva
+    private string? errore;
+
     protected override async Task OnInitializedAsync()
     {
-        var imp = await ImpostazioniSvc.GetImpostazioniAsync();
-        numOmbrelloni = imp.NumeroOmbrelloni;
-        numColonne = imp.NumeroColonne;
-        await CaricaProdotti();
+        try
+        {
+            var imp = await ImpostazioniSvc.GetImpostazioniAsync();
+            numOmbrelloni = imp.NumeroOmbrelloni;
+            numColonne = imp.NumeroColonne;
+            await CaricaProdotti();
+        }
+        catch (Exception ex)
+        {
+            errore = $"Impossibile caricare le impostazioni: {ex.Message}";
+        }
     }
 
+    // Nessun try-catch qui: le eccezioni devono propagarsi ai metodi chiamanti
+    // che hanno il proprio contesto di errore e il proprio catch block.
     private async Task CaricaProdotti()
     {
         prodottiLista = await Prodotti.GetTuttiProdottiAsync();
@@ -237,9 +256,18 @@
 
     private async Task SalvaOmbrelloni()
     {
-        await ImpostazioniSvc.AggiornaOmbrelloniAsync(numOmbrelloni);
-        await ImpostazioniSvc.AggiornaColumeAsync(numColonne);
-        msgSpiaggia = "Configurazione salvata.";
+        errore = null;
+        msgSpiaggia = null;
+        try
+        {
+            await ImpostazioniSvc.AggiornaOmbrelloniAsync(numOmbrelloni);
+            await ImpostazioniSvc.AggiornaColumeAsync(numColonne);
+            msgSpiaggia = "Configurazione salvata.";
+        }
+        catch (Exception ex)
+        {
+            errore = $"Errore nel salvataggio della configurazione: {ex.Message}";
+        }
     }
 
     private void ModificaCategoria(string cat)
@@ -250,28 +278,54 @@
 
     private async Task SalvaCategoria(string vecchia)
     {
-        if (!string.IsNullOrWhiteSpace(nuovoNomeCategoria))
-            await Prodotti.RinominaCategoriaAsync(vecchia, nuovoNomeCategoria!);
-        categoriaInModifica = null;
-        await CaricaProdotti();
+        errore = null;
+        try
+        {
+            if (!string.IsNullOrWhiteSpace(nuovoNomeCategoria))
+                await Prodotti.RinominaCategoriaAsync(vecchia, nuovoNomeCategoria!);
+            categoriaInModifica = null;
+            await CaricaProdotti();
+        }
+        catch (Exception ex)
+        {
+            categoriaInModifica = null;
+            errore = $"Errore nel rinominare la categoria: {ex.Message}";
+        }
     }
 
     private void ConfermaEliminaCategoria(string cat) => confermaCancellaCategoria = cat;
 
     private async Task EliminaCategoria()
     {
-        await Prodotti.EliminaCategoriaAsync(confermaCancellaCategoria!);
-        confermaCancellaCategoria = null;
-        await CaricaProdotti();
+        errore = null;
+        try
+        {
+            await Prodotti.EliminaCategoriaAsync(confermaCancellaCategoria!);
+            confermaCancellaCategoria = null;
+            await CaricaProdotti();
+        }
+        catch (Exception ex)
+        {
+            confermaCancellaCategoria = null;
+            errore = $"Errore nell'eliminazione della categoria: {ex.Message}";
+        }
     }
 
     private async Task AggiuntaProdotto()
     {
         if (string.IsNullOrWhiteSpace(nuovoProdottoNome)) return;
-        await Prodotti.AggiuntaProdottoAsync(nuovoProdottoNome, nuovoProdottoPrezzo, nuovoProdottoCategoria);
-        nuovoProdottoNome = "";
-        nuovoProdottoPrezzo = 0;
-        await CaricaProdotti();
+        errore = null;
+        try
+        {
+            await Prodotti.AggiuntaProdottoAsync(nuovoProdottoNome, nuovoProdottoPrezzo, nuovoProdottoCategoria);
+            nuovoProdottoNome = "";
+            nuovoProdottoPrezzo = 0;
+            await CaricaProdotti();
+        }
+        catch (Exception ex)
+        {
+            errore = $"Errore nell'aggiunta del prodotto: {ex.Message}";
+        }
     }
 
     private void ModificaProdotto(BeachBar.Core.Entities.Prodotto p)
@@ -285,28 +339,65 @@
 
     private async Task SalvaProdotto(int id)
     {
-        await Prodotti.AggiornaProdottoAsync(id, editNome, editPrezzo, editCategoria, editDisponibile);
-        prodottoInModifica = null;
-        await CaricaProdotti();
+        errore = null;
+        try
+        {
+            await Prodotti.AggiornaProdottoAsync(id, editNome, editPrezzo, editCategoria, editDisponibile);
+            prodottoInModifica = null;
+            await CaricaProdotti();
+        }
+        catch (Exception ex)
+        {
+            prodottoInModifica = null;
+            errore = $"Errore nel salvataggio del prodotto: {ex.Message}";
+        }
     }
 
     private async Task EliminaProdotto(int id)
     {
-        await Prodotti.EliminaProdottoAsync(id);
-        await CaricaProdotti();
+        errore = null;
+        try
+        {
+            await Prodotti.EliminaProdottoAsync(id);
+            await CaricaProdotti();
+        }
+        catch (Exception ex)
+        {
+            errore = $"Errore nell'eliminazione del prodotto: {ex.Message}";
+        }
     }
 
     private async Task EseguiReset()
     {
-        await Sessioni.ResetTotaliAsync();
-        confermaReset = false;
-        msgReset = "Reset sessioni completato.";
+        errore = null;
+        msgReset = null;
+        try
+        {
+            await Sessioni.ResetTotaliAsync();
+            confermaReset = false;
+            msgReset = "Reset sessioni completato.";
+        }
+        catch (Exception ex)
+        {
+            confermaReset = false;
+            errore = $"Errore durante il reset: {ex.Message}";
+        }
     }
 
     private async Task EseguiResetVisivo()
     {
-        await ImpostazioniSvc.ResetVisivoStatisticheAsync();
-        confermaResetVisivo = false;
-        msgResetVisivo = "Contatori dashboard azzerati.";
+        errore = null;
+        msgResetVisivo = null;
+        try
+        {
+            await ImpostazioniSvc.ResetVisivoStatisticheAsync();
+            confermaResetVisivo = false;
+            msgResetVisivo = "Contatori dashboard azzerati.";
+        }
+        catch (Exception ex)
+        {
+            confermaResetVisivo = false;
+            errore = $"Errore nell'azzeramento dei contatori: {ex.Message}";
+        }
     }
 }

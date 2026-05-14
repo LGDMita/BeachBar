@@ -27,23 +27,41 @@ public class ProdottiController : ControllerBase
     /// <summary>Restituisce tutti i prodotti ordinati per categoria e nome.</summary>
     [HttpGet]
     [ProducesResponseType(typeof(List<ProdottoDto>), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status500InternalServerError)]
     public async Task<IActionResult> GetProdotti()
     {
-        var prodotti = await _prodotti.GetTuttiProdottiAsync();
-        return Ok(prodotti.Select(ProdottoDto.FromEntity).ToList());
+        try
+        {
+            var prodotti = await _prodotti.GetTuttiProdottiAsync();
+            return Ok(prodotti.Select(ProdottoDto.FromEntity).ToList());
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Errore nel recupero dei prodotti");
+            return StatusCode(500, "Errore interno del server.");
+        }
     }
 
     /// <summary>Restituisce un singolo prodotto per ID.</summary>
     [HttpGet("{id:int}")]
     [ProducesResponseType(typeof(ProdottoDto), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
+    [ProducesResponseType(StatusCodes.Status500InternalServerError)]
     public async Task<IActionResult> GetProdotto(int id)
     {
-        var prodotto = await _prodotti.GetProdottoByIdAsync(id);
-        if (prodotto == null)
-            return NotFound("Prodotto non trovato");
+        try
+        {
+            var prodotto = await _prodotti.GetProdottoByIdAsync(id);
+            if (prodotto == null)
+                return NotFound("Prodotto non trovato");
 
-        return Ok(ProdottoDto.FromEntity(prodotto));
+            return Ok(ProdottoDto.FromEntity(prodotto));
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Errore nel recupero del prodotto {Id}", id);
+            return StatusCode(500, "Errore interno del server.");
+        }
     }
 
     /// <summary>
@@ -52,9 +70,18 @@ public class ProdottiController : ControllerBase
     /// </summary>
     [HttpGet("categoria/{categoria}")]
     [ProducesResponseType(typeof(List<ProdottoDto>), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status500InternalServerError)]
     public async Task<IActionResult> GetProdottiPerCategoria(string categoria)
     {
-        var prodotti = await _prodotti.GetProdottiPerCategoriaAsync(categoria);
-        return Ok(prodotti.Select(ProdottoDto.FromEntity).ToList());
+        try
+        {
+            var prodotti = await _prodotti.GetProdottiPerCategoriaAsync(categoria);
+            return Ok(prodotti.Select(ProdottoDto.FromEntity).ToList());
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Errore nel recupero dei prodotti per categoria {Categoria}", categoria);
+            return StatusCode(500, "Errore interno del server.");
+        }
     }
 }

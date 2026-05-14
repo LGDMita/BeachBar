@@ -38,13 +38,22 @@ public class OrdiniController : ControllerBase
     [HttpGet]
     [ProducesResponseType(typeof(List<ConsumazioneDto>), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
+    [ProducesResponseType(StatusCodes.Status500InternalServerError)]
     public async Task<IActionResult> GetOrdini(int sessioneId)
     {
-        var sessione = await _sessioni.GetSessioneByIdAsync(sessioneId);
-        if (sessione == null)
-            return NotFound("Sessione non trovata");
+        try
+        {
+            var sessione = await _sessioni.GetSessioneByIdAsync(sessioneId);
+            if (sessione == null)
+                return NotFound("Sessione non trovata");
 
-        return Ok(sessione.Consumazioni.Select(ConsumazioneDto.FromEntity).ToList());
+            return Ok(sessione.Consumazioni.Select(ConsumazioneDto.FromEntity).ToList());
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Errore nel recupero degli ordini per sessione {Id}", sessioneId);
+            return StatusCode(500, "Errore interno del server.");
+        }
     }
 
     /// <summary>
@@ -57,24 +66,33 @@ public class OrdiniController : ControllerBase
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     [ProducesResponseType(StatusCodes.Status409Conflict)]
+    [ProducesResponseType(StatusCodes.Status500InternalServerError)]
     public async Task<IActionResult> AggiungiOrdine(int sessioneId, [FromBody] AggiungiConsumazioneRequest request)
     {
         if (!ModelState.IsValid)
             return BadRequest(ModelState);
 
-        var sessione = await _sessioni.GetSessioneByIdAsync(sessioneId);
-        if (sessione == null)
-            return NotFound("Sessione non trovata");
+        try
+        {
+            var sessione = await _sessioni.GetSessioneByIdAsync(sessioneId);
+            if (sessione == null)
+                return NotFound("Sessione non trovata");
 
-        if (sessione.Chiusa)
-            return Conflict("Impossibile aggiungere ordini a una sessione chiusa");
+            if (sessione.Chiusa)
+                return Conflict("Impossibile aggiungere ordini a una sessione chiusa");
 
-        var prodotto = await _prodotti.GetProdottoByIdAsync(request.ProdottoId);
-        if (prodotto == null)
-            return NotFound("Prodotto non trovato");
+            var prodotto = await _prodotti.GetProdottoByIdAsync(request.ProdottoId);
+            if (prodotto == null)
+                return NotFound("Prodotto non trovato");
 
-        var consumazione = await _consumazioni.AggiungiConsumazioneConQuantitaAsync(sessioneId, request.ProdottoId, request.Quantita);
-        return StatusCode(StatusCodes.Status201Created, ConsumazioneDto.FromEntity(consumazione));
+            var consumazione = await _consumazioni.AggiungiConsumazioneConQuantitaAsync(sessioneId, request.ProdottoId, request.Quantita);
+            return StatusCode(StatusCodes.Status201Created, ConsumazioneDto.FromEntity(consumazione));
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Errore nell'aggiunta dell'ordine per sessione {Id}", sessioneId);
+            return StatusCode(500, "Errore interno del server.");
+        }
     }
 
     /// <summary>
@@ -85,19 +103,28 @@ public class OrdiniController : ControllerBase
     [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     [ProducesResponseType(StatusCodes.Status409Conflict)]
+    [ProducesResponseType(StatusCodes.Status500InternalServerError)]
     public async Task<IActionResult> EliminaOrdine(int sessioneId, int ordineId)
     {
-        var sessione = await _sessioni.GetSessioneByIdAsync(sessioneId);
-        if (sessione == null)
-            return NotFound("Sessione non trovata");
+        try
+        {
+            var sessione = await _sessioni.GetSessioneByIdAsync(sessioneId);
+            if (sessione == null)
+                return NotFound("Sessione non trovata");
 
-        if (sessione.Chiusa)
-            return Conflict("Impossibile eliminare ordini da una sessione chiusa");
+            if (sessione.Chiusa)
+                return Conflict("Impossibile eliminare ordini da una sessione chiusa");
 
-        var trovato = await _consumazioni.EliminaConsumazioneByIdAsync(ordineId);
-        if (!trovato)
-            return NotFound("Ordine non trovato");
+            var trovato = await _consumazioni.EliminaConsumazioneByIdAsync(ordineId);
+            if (!trovato)
+                return NotFound("Ordine non trovato");
 
-        return NoContent();
+            return NoContent();
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Errore nell'eliminazione dell'ordine {OrdineId} per sessione {SessioneId}", ordineId, sessioneId);
+            return StatusCode(500, "Errore interno del server.");
+        }
     }
 }

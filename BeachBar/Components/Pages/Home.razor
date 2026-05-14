@@ -31,7 +31,13 @@
         </div>
     </div>
 
-    @if (ombrelloni == null)
+    @if (errore != null)
+    {
+        <div style="background:#f8d7da; color:#721c24; border:1px solid #f5c6cb; padding:10px 14px; border-radius:8px; margin-bottom:12px;">
+            ⚠️ @errore
+        </div>
+    }
+    else if (ombrelloni == null)
     {
         <p>Caricamento...</p>
     }
@@ -63,18 +69,25 @@
     private decimal aperto;
     private decimal incassato;
     private int ombrelloniAttivi;
-
     private int colonne = 4;
+    private string? errore;
 
     protected override async Task OnInitializedAsync()
     {
-        ombrelloni = await Sessioni.GetOmbrelloniAsync();
-        var stats = await Impostazioni.GetStatisticheAsync();
-        aperto = stats.aperto;
-        incassato = stats.incassato;
-        ombrelloniAttivi = stats.ombrelloniAttivi;
-        var imp = await Impostazioni.GetImpostazioniAsync();
-        colonne = imp.NumeroColonne;
+        try
+        {
+            ombrelloni = await Sessioni.GetOmbrelloniAsync();
+            var stats = await Impostazioni.GetStatisticheAsync();
+            aperto = stats.aperto;
+            incassato = stats.incassato;
+            ombrelloniAttivi = stats.ombrelloniAttivi;
+            var imp = await Impostazioni.GetImpostazioniAsync();
+            colonne = imp.NumeroColonne;
+        }
+        catch (Exception ex)
+        {
+            errore = $"Impossibile caricare la dashboard: {ex.Message}";
+        }
     }
 
     private void Vai(int id) => Nav.NavigateTo("/ombrellone/" + id);

@@ -12,7 +12,14 @@
         <button class="btn-torna" @onclick="TornaDashboard">← Dashboard</button>
         <h2>Ombrellone @Id</h2>
 
-        @if (sessione == null)
+        @if (errore != null)
+        {
+            <div style="background:#f8d7da; color:#721c24; border:1px solid #f5c6cb; padding:10px 14px; border-radius:8px; margin-bottom:12px;">
+                ⚠️ @errore
+            </div>
+        }
+
+        @if (ombrelloneValido && sessione == null)
         {
             <div class="apri-sessione">
                 <p>Ombrellone libero</p>
@@ -20,7 +27,7 @@
                 <button class="btn-apri" @onclick="ApriSessione">Apri sessione</button>
             </div>
         }
-        else
+        else if (ombrelloneValido)
         {
             <div class="nome-cliente-container" style="display: flex; justify-content: space-between; align-items: center;">
                 @if (isEditingNome)
@@ -30,7 +37,7 @@
                 }
                 else
                 {
-                    <p class="nome-cliente" style="margin:0;">@(sessione.NomeCliente ?? "Cliente anonimo")</p>
+                    <p class="nome-cliente" style="margin:0;">@(sessione?.NomeCliente ?? "Cliente anonimo")</p>
                     <button class="btn-edit" @onclick="IniziaModifica" style="background: transparent; border: none; cursor: pointer;">
                         ✏️
                     </button>
@@ -123,10 +130,12 @@
     private List<BeachBar.Core.Entities.Prodotto> prodotti = new();
     private string? nomeCliente;
     private string categoriaSelezionata = "";
-
     private bool isEditingNome = false;
     private string? nuovoNome;
     private bool mostraConfermaAnnulla = false;
+    private string? errore;
+    // false solo se l'ombrellone non esiste: nasconde il form per evitare azioni su ID inesistenti
+    private bool ombrelloneValido = true;
 
     private List<string> categorie => prodotti.Select(p => p.Categoria).Distinct().OrderBy(c => c).ToList();
     private List<BeachBar.Core.Entities.Prodotto> prodottiFiltrati =>
@@ -134,9 +143,25 @@
 
     protected override async Task OnInitializedAsync()
     {
-        prodotti = await Prodotti.GetProdottiAsync();
-        sessione = await Sessioni.GetSessioneAttivaAsync(Id);
-        if (categorie.Any()) categoriaSelezionata = categorie.First();
+        try
+        {
+            prodotti = await Prodotti.GetProdottiAsync();
+            var ombrellone = await Sessioni.GetOmbrelloneByIdAsync(Id);
+            if (ombrellone == null)
+            {
+                // ID non esiste nel DB: nasconde il form e mostra errore invece di simulare un ombrellone libero
+                ombrelloneValido = false;
+                errore = $"Ombrellone {Id} non trovato.";
+                return;
+            }
+            sessione = await Sessioni.GetSessioneAttivaAsync(Id);
+            if (categorie.Any()) categoriaSelezionata = categorie.First();
+        }
+        catch (Exception ex)
+        {
+            ombrelloneValido = false;
+            errore = $"Impossibile caricare i dati dell'ombrellone: {ex.Message}";
+        }
     }
 
     private void IniziaModifica()
@@ -149,8 +174,16 @@
     {
         if (sessione != null)
         {
-            await Sessioni.AggiornaNomeSessioneAsync(sessione.Id, nuovoNome);
-            sessione.NomeCliente = nuovoNome;
+            errore = null;
+            try
+            {
+                await Sessioni.AggiornaNomeSessioneAsync(sessione.Id, nuovoNome);
+                sessione.NomeCliente = nuovoNome;
+            }
+            catch (Exception ex)
+            {
+                errore = $"Impossibile salvare il nome: {ex.Message}";
+            }
         }
         isEditingNome = false;
     }
@@ -159,33 +192,74 @@
     {
         if (sessione != null)
         {
-            await Sessioni.AnnullaSessioneAsync(sessione.Id);
-            Nav.NavigateTo("/");
+            errore = null;
+            try
+            {
+                await Sessioni.AnnullaSessioneAsync(sessione.Id);
+                Nav.NavigateTo("/");
+            }
+            catch (Exception ex)
+            {
+                mostraConfermaAnnulla = false;
+                errore = $"Impossibile annullare la sessione: {ex.Message}";
+            }
         }
     }
 
     private async Task ApriSessione()
     {
-        await Sessioni.ApriSessioneAsync(Id, nomeCliente);
-        sessione = await Sessioni.GetSessioneAttivaAsync(Id);
+        errore = null;
+        try
+        {
+            await Sessioni.ApriSessioneAsync(Id, nomeCliente);
+            sessione = await Sessioni.GetSessioneAttivaAsync(Id);
+        }
+        catch (Exception ex)
+        {
+            errore = $"Impossibile aprire la sessione: {ex.Message}";
+        }
     }
 
     private async Task Aggiungi(int prodottoId)
     {
-        await Consumazioni.AggiungiConsumazione(sessione!.Id, prodottoId);
-        sessione = await Sessioni.GetSessioneAttivaAsync(Id);
+        errore = null;
+        try
+        {
+            await Consumazioni.AggiungiConsumazione(sessione!.Id, prodottoId);
+            sessione = await Sessioni.GetSessioneAttivaAsync(Id);
+        }
+        catch (Exception ex)
+        {
+            errore = $"Impossibile aggiungere il prodotto: {ex.Message}";
+        }
     }
 
     private async Task Rimuovi(int prodottoId)
     {
-        await Consumazioni.RimuoviConsumazione(sessione!.Id, prodottoId);
-        sessione = await Sessioni.GetSessioneAttivaAsync(Id);
+        errore = null;
+        try
+        {
+            await Consumazioni.RimuoviConsumazione(sessione!.Id, prodottoId);
+            sessione = await Sessioni.GetSessioneAttivaAsync(Id);
+        }
+        catch (Exception ex)
+        {
+            errore = $"Impossibile rimuovere il prodotto: {ex.Message}";
+        }
     }
 
     private async Task ChiudiSessione()
     {
-        await Sessioni.ChiudiSessioneAsync(sessione!.Id);
-        Nav.NavigateTo("/");
+        errore = null;
+        try
+        {
+            await Sessioni.ChiudiSessioneAsync(sessione!.Id);
+            Nav.NavigateTo("/");
+        }
+        catch (Exception ex)
+        {
+            errore = $"Impossibile chiudere la sessione: {ex.Message}";
+        }
     }
 
     private void TornaDashboard() => Nav.NavigateTo("/");

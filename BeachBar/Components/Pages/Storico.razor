@@ -14,7 +14,13 @@
     </div>
 
     <div class="storico-card">
-        @if (sessioni == null)
+        @if (errore != null)
+        {
+            <div style="background:#f8d7da; color:#721c24; border:1px solid #f5c6cb; padding:10px 14px; border-radius:8px; margin-bottom:12px;">
+                ⚠️ @errore
+            </div>
+        }
+        else if (sessioni == null)
         {
             <div class="empty-state">Caricamento in corso...</div>
         }
@@ -71,18 +77,37 @@
 
 @code {
     private List<Sessione>? sessioni;
+    private string? errore;
 
     protected override async Task OnInitializedAsync() => await CaricaDati();
 
-    private async Task CaricaDati() => sessioni = await Sessioni.GetStoricoSessioniAsync();
+    private async Task CaricaDati()
+    {
+        try
+        {
+            sessioni = await Sessioni.GetStoricoSessioniAsync();
+        }
+        catch (Exception ex)
+        {
+            errore = $"Impossibile caricare lo storico: {ex.Message}";
+        }
+    }
 
     private async Task Elimina(int id)
     {
         bool confermato = await JS.InvokeAsync<bool>("confirm", "Eliminare definitivamente questo scontrino?");
         if (confermato)
         {
-            await Sessioni.EliminaSessioneStoricoAsync(id);
-            await CaricaDati();
+            errore = null;
+            try
+            {
+                await Sessioni.EliminaSessioneStoricoAsync(id);
+                await CaricaDati();
+            }
+            catch (Exception ex)
+            {
+                errore = $"Impossibile eliminare lo scontrino: {ex.Message}";
+            }
         }
     }
 }

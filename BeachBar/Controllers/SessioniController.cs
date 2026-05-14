@@ -28,32 +28,59 @@ public class SessioniController : ControllerBase
     /// <summary>Restituisce tutte le sessioni (aperte e chiuse).</summary>
     [HttpGet]
     [ProducesResponseType(typeof(List<SessioneDto>), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status500InternalServerError)]
     public async Task<IActionResult> GetSessioni()
     {
-        var sessioni = await _sessioni.GetTutteSessioniAsync();
-        return Ok(sessioni.Select(SessioneDto.FromEntity).ToList());
+        try
+        {
+            var sessioni = await _sessioni.GetTutteSessioniAsync();
+            return Ok(sessioni.Select(SessioneDto.FromEntity).ToList());
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Errore nel recupero delle sessioni");
+            return StatusCode(500, "Errore interno del server.");
+        }
     }
 
     /// <summary>Restituisce solo le sessioni attualmente aperte.</summary>
     [HttpGet("aperte")]
     [ProducesResponseType(typeof(List<SessioneDto>), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status500InternalServerError)]
     public async Task<IActionResult> GetSessioniAperte()
     {
-        var sessioni = await _sessioni.GetSessioniAperteAsync();
-        return Ok(sessioni.Select(SessioneDto.FromEntity).ToList());
+        try
+        {
+            var sessioni = await _sessioni.GetSessioniAperteAsync();
+            return Ok(sessioni.Select(SessioneDto.FromEntity).ToList());
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Errore nel recupero delle sessioni aperte");
+            return StatusCode(500, "Errore interno del server.");
+        }
     }
 
     /// <summary>Restituisce una singola sessione con l'elenco completo delle consumazioni.</summary>
     [HttpGet("{id:int}")]
     [ProducesResponseType(typeof(SessioneDto), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
+    [ProducesResponseType(StatusCodes.Status500InternalServerError)]
     public async Task<IActionResult> GetSessione(int id)
     {
-        var sessione = await _sessioni.GetSessioneByIdAsync(id);
-        if (sessione == null)
-            return NotFound("Sessione non trovata");
+        try
+        {
+            var sessione = await _sessioni.GetSessioneByIdAsync(id);
+            if (sessione == null)
+                return NotFound("Sessione non trovata");
 
-        return Ok(SessioneDto.FromEntity(sessione));
+            return Ok(SessioneDto.FromEntity(sessione));
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Errore nel recupero della sessione {Id}", id);
+            return StatusCode(500, "Errore interno del server.");
+        }
     }
 
     /// <summary>
@@ -65,26 +92,35 @@ public class SessioniController : ControllerBase
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     [ProducesResponseType(StatusCodes.Status409Conflict)]
+    [ProducesResponseType(StatusCodes.Status500InternalServerError)]
     public async Task<IActionResult> ApriSessione([FromBody] ApriSessioneRequest request)
     {
         if (!ModelState.IsValid)
             return BadRequest(ModelState);
 
-        var ombrellone = await _sessioni.GetOmbrelloneByIdAsync(request.OmbrelloneId);
-        if (ombrellone == null)
-            return NotFound("Ombrellone non trovato");
+        try
+        {
+            var ombrellone = await _sessioni.GetOmbrelloneByIdAsync(request.OmbrelloneId);
+            if (ombrellone == null)
+                return NotFound("Ombrellone non trovato");
 
-        var sessioneEsistente = await _sessioni.GetSessioneAttivaAsync(request.OmbrelloneId);
-        if (sessioneEsistente != null)
-            return Conflict("Esiste già una sessione aperta per questo ombrellone");
+            var sessioneEsistente = await _sessioni.GetSessioneAttivaAsync(request.OmbrelloneId);
+            if (sessioneEsistente != null)
+                return Conflict("Esiste già una sessione aperta per questo ombrellone");
 
-        await _sessioni.ApriSessioneAsync(request.OmbrelloneId, request.NomeCliente);
+            await _sessioni.ApriSessioneAsync(request.OmbrelloneId, request.NomeCliente);
 
-        // Il servizio non restituisce la sessione appena creata,
-        // quindi la recuperiamo subito dopo con una seconda query.
-        var nuovaSessione = await _sessioni.GetSessioneAttivaAsync(request.OmbrelloneId);
-        var dto = SessioneDto.FromEntity(nuovaSessione!);
-        return CreatedAtAction(nameof(GetSessione), new { id = dto.Id }, dto);
+            // Il servizio non restituisce la sessione appena creata,
+            // quindi la recuperiamo subito dopo con una seconda query.
+            var nuovaSessione = await _sessioni.GetSessioneAttivaAsync(request.OmbrelloneId);
+            var dto = SessioneDto.FromEntity(nuovaSessione!);
+            return CreatedAtAction(nameof(GetSessione), new { id = dto.Id }, dto);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Errore nell'apertura della sessione per ombrellone {Id}", request.OmbrelloneId);
+            return StatusCode(500, "Errore interno del server.");
+        }
     }
 
     /// <summary>
@@ -95,19 +131,28 @@ public class SessioniController : ControllerBase
     [ProducesResponseType(typeof(SessioneDto), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     [ProducesResponseType(StatusCodes.Status409Conflict)]
+    [ProducesResponseType(StatusCodes.Status500InternalServerError)]
     public async Task<IActionResult> ChiudiSessione(int id)
     {
-        var sessione = await _sessioni.GetSessioneByIdAsync(id);
-        if (sessione == null)
-            return NotFound("Sessione non trovata");
+        try
+        {
+            var sessione = await _sessioni.GetSessioneByIdAsync(id);
+            if (sessione == null)
+                return NotFound("Sessione non trovata");
 
-        if (sessione.Chiusa)
-            return Conflict("La sessione è già chiusa");
+            if (sessione.Chiusa)
+                return Conflict("La sessione è già chiusa");
 
-        await _sessioni.ChiudiSessioneAsync(id);
+            await _sessioni.ChiudiSessioneAsync(id);
 
-        // Rileggiamo dopo la chiusura per includere data di chiusura e totale aggiornato.
-        var sessioneChiusa = await _sessioni.GetSessioneByIdAsync(id);
-        return Ok(SessioneDto.FromEntity(sessioneChiusa!));
+            // Rileggiamo dopo la chiusura per includere data di chiusura e totale aggiornato.
+            var sessioneChiusa = await _sessioni.GetSessioneByIdAsync(id);
+            return Ok(SessioneDto.FromEntity(sessioneChiusa!));
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Errore nella chiusura della sessione {Id}", id);
+            return StatusCode(500, "Errore interno del server.");
+        }
     }
 }

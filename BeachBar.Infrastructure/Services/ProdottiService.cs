@@ -33,8 +33,8 @@ public class ProdottiService : IProdottiService
 
     public async Task AggiornaProdottoAsync(int id, string nome, decimal prezzo, string categoria, bool disponibile)
     {
-        var p = await _db.Prodotti.FindAsync(id);
-        if (p == null) return;
+        var p = await _db.Prodotti.FindAsync(id)
+            ?? throw new InvalidOperationException($"Prodotto {id} non trovato.");
         p.Nome = nome;
         p.Prezzo = prezzo;
         p.Categoria = categoria;
@@ -44,8 +44,10 @@ public class ProdottiService : IProdottiService
 
     public async Task EliminaProdottoAsync(int id)
     {
-        var p = await _db.Prodotti.FindAsync(id);
-        if (p != null) { _db.Prodotti.Remove(p); await _db.SaveChangesAsync(); }
+        var p = await _db.Prodotti.FindAsync(id)
+            ?? throw new InvalidOperationException($"Prodotto {id} non trovato.");
+        _db.Prodotti.Remove(p);
+        await _db.SaveChangesAsync();
     }
 
     public async Task RinominaCategoriaAsync(string vecchia, string nuova)
