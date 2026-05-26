@@ -1,208 +1,89 @@
 @page "/ombrellone/{Id:int}"
 @attribute [Authorize]
 @inject BeachBar.Infrastructure.Services.ISessioniService Sessioni
-@inject BeachBar.Infrastructure.Services.IProdottiService Prodotti
-@inject BeachBar.Infrastructure.Services.IConsumazioniService Consumazioni
+@inject BeachBar.Services.DateContext DateCtx
 @inject NavigationManager Nav
-@inject IJSRuntime JS
 
-<div class="scheda-layout">
-
-    <div class="colonna-sinistra">
-        <button class="btn-torna" @onclick="TornaDashboard">← Dashboard</button>
-        <h2>Ombrellone @Id</h2>
-
-        @if (errore != null)
-        {
-            <div style="background:#f8d7da; color:#721c24; border:1px solid #f5c6cb; padding:10px 14px; border-radius:8px; margin-bottom:12px;">
-                ⚠️ @errore
-            </div>
-        }
-
-        @if (ombrelloneValido && sessione == null)
-        {
-            <div class="apri-sessione">
-                <p>Ombrellone libero</p>
-                <input class="input-nome" placeholder="Nome cliente (opzionale)" @bind="nomeCliente" />
-                <button class="btn-apri" @onclick="ApriSessione">Apri sessione</button>
-            </div>
-        }
-        else if (ombrelloneValido)
-        {
-            <div class="nome-cliente-container" style="display: flex; justify-content: space-between; align-items: center;">
-                @if (isEditingNome)
-                {
-                    <input class="input-nome" @bind="nuovoNome" @onkeyup="@(async (e) => { if (e.Key == "Enter") await SalvaNome(); })" />
-                    <button @onclick="SalvaNome" style="background:none; border:none; cursor:pointer;">✔️</button>
-                }
-                else
-                {
-                    <p class="nome-cliente" style="margin:0;">@(sessione?.NomeCliente ?? "Cliente anonimo")</p>
-                    <button class="btn-edit" @onclick="IniziaModifica" style="background: transparent; border: none; cursor: pointer;">
-                        ✏️
-                    </button>
-                }
-            </div>
-
-            <div class="categorie-tabs">
-                @foreach (var cat in categorie)
-                {
-                    <button class="tab @(categoriaSelezionata == cat ? "tab-attivo" : "")"
-                            @onclick="() => categoriaSelezionata = cat">
-                        @cat
-                    </button>
-                }
-            </div>
-
-            <div class="prodotti">
-                @foreach (var p in prodottiFiltrati)
-                {
-                    <button class="btn-prodotto" @onclick="() => Aggiungi(p.Id)">
-                        <span class="prod-nome">@p.Nome</span>
-                        <span class="prod-prezzo">€ @p.Prezzo.ToString("0.00")</span>
-                    </button>
-                }
-            </div>
-        }
+<div class="dashboard" style="max-width: 600px; margin: 0 auto;">
+    <button class="btn-torna" @onclick='() => Nav.NavigateTo("/")'>← Dashboard</button>
+    <h2>Ombrellone @Id</h2>
+    <div style="font-size: 0.85rem; color: #6c757d; margin-bottom: 16px;">
+        📅 @DateCtx.DataSelezionata.ToString("dd MMMM yyyy", new System.Globalization.CultureInfo("it-IT"))
     </div>
 
-    @if (sessione != null)
+    @if (errore != null)
     {
-        <div class="colonna-destra">
-            <h3>Scontrino</h3>
-            <p class="nome-cliente-scontrino">@(sessione.NomeCliente ?? "Cliente anonimo")</p>
+        <div style="background:#f8d7da; color:#721c24; border:1px solid #f5c6cb; padding:10px 14px; border-radius:8px; margin-bottom:12px;">
+            ⚠️ @errore
+        </div>
+    }
 
-            <div class="scontrino-righe">
-                @if (!sessione.Consumazioni.Any())
+    @if (ombrelloneValido)
+    {
+        @if (sessioni == null)
+        {
+            <p>Caricamento...</p>
+        }
+        else
+        {
+            @if (sessioni.Any())
+            {
+                <h3 style="margin-bottom: 12px;">Conti aperti</h3>
+                @foreach (var s in sessioni)
                 {
-                    <p class="vuoto">Nessuna consumazione ancora.</p>
-                }
-                else
-                {
-                    @foreach (var c in sessione.Consumazioni)
-                    {
-                        <div class="riga-scontrino">
-                            <div class="riga-info">
-                                <span class="riga-nome">@c.Prodotto.Nome</span>
-                                <span class="riga-qty">x@(c.Quantita)</span>
-                            </div>
-                            <div class="riga-destra">
-                                <span class="riga-totale">€ @((c.Quantita * c.Prodotto.Prezzo).ToString("0.00"))</span>
-                                <button class="btn-rimuovi" @onclick="() => Rimuovi(c.ProdottoId)">−</button>
+                    var totale = s.Consumazioni.Sum(c => c.Quantita * c.Prodotto.Prezzo);
+                    <div style="background: white; border-radius: 12px; padding: 16px; margin-bottom: 12px; box-shadow: 0 2px 8px rgba(0,0,0,0.08); display: flex; justify-content: space-between; align-items: center;">
+                        <div>
+                            <div style="font-weight: 600; font-size: 1rem;">@(string.IsNullOrWhiteSpace(s.NomeCliente) ? "Cliente anonimo" : s.NomeCliente)</div>
+                            <div style="font-size: 0.85rem; color: #6c757d; margin-top: 4px;">
+                                @s.Consumazioni.Sum(c => c.Quantita) prodotti · € @totale.ToString("0.00")
                             </div>
                         </div>
-                    }
-                }
-            </div>
-
-            <div class="totale-scontrino">
-                Totale: € @sessione.Consumazioni.Sum(c => c.Quantita * c.Prodotto.Prezzo).ToString("0.00")
-            </div>
-
-            <div class="azioni-scontrino" style="display: flex; flex-direction: column; gap: 10px; margin-top: 20px;">
-                <button class="btn-torna-dashboard" @onclick="TornaDashboard">Va bene così →</button>
-                @if (!mostraConfermaAnnulla)
-                {
-                    <button class="btn-chiudi" @onclick="ChiudiSessione">Chiudi e incassa</button>
-                    <button class="btn-annulla" @onclick="() => mostraConfermaAnnulla = true" style="background-color: #f8d7da; color: #721c24;">
-                        Annulla sessione
-                    </button>
-                }
-                else
-                {
-                    <div class="conferma-annulla" style="background: #fff3cd; padding: 15px; border-radius: 12px; text-align: center;">
-                        <p style="margin-bottom: 10px; color: #856404; font-weight: bold;">Confermi l'annullamento?</p>
-                        <div style="display: flex; gap: 10px;">
-                            <button @onclick="EseguiAnnulla" style="flex:1; background:#dc3545; color:white; border:none; padding:10px; border-radius:8px;">Sì</button>
-                            <button @onclick="() => mostraConfermaAnnulla = false" style="flex:1; background:#6c757d; color:white; border:none; padding:10px; border-radius:8px;">No</button>
-                        </div>
+                        <button class="btn-apri" @onclick='() => Nav.NavigateTo("/conto/" + s.Id)'
+                                style="padding: 8px 20px; font-size: 0.9rem;">
+                            Gestisci →
+                        </button>
                     </div>
                 }
+                <hr style="margin: 20px 0;" />
+            }
+
+            <h3 style="margin-bottom: 12px;">@(sessioni.Any() ? "Apri altro conto" : "Ombrellone libero")</h3>
+            <div class="apri-sessione">
+                <input class="input-nome" placeholder="Nome cliente (opzionale)" @bind="nomeCliente" />
+                <button class="btn-apri" @onclick="ApriSessione">
+                    @(DateCtx.IsOggi ? "Apri sessione" : "Prenota")
+                </button>
             </div>
-        </div>
+        }
     }
 </div>
 
 @code {
     [Parameter] public int Id { get; set; }
 
-    private BeachBar.Core.Entities.Sessione? sessione;
-    private List<BeachBar.Core.Entities.Prodotto> prodotti = new();
+    private List<BeachBar.Core.Entities.Sessione>? sessioni;
     private string? nomeCliente;
-    private string categoriaSelezionata = "";
-    private bool isEditingNome = false;
-    private string? nuovoNome;
-    private bool mostraConfermaAnnulla = false;
-    private string? errore;
-    // false solo se l'ombrellone non esiste: nasconde il form per evitare azioni su ID inesistenti
     private bool ombrelloneValido = true;
-
-    private List<string> categorie => prodotti.Select(p => p.Categoria).Distinct().OrderBy(c => c).ToList();
-    private List<BeachBar.Core.Entities.Prodotto> prodottiFiltrati =>
-        prodotti.Where(p => p.Categoria == categoriaSelezionata).ToList();
+    private string? errore;
 
     protected override async Task OnInitializedAsync()
     {
         try
         {
-            prodotti = await Prodotti.GetProdottiAsync();
             var ombrellone = await Sessioni.GetOmbrelloneByIdAsync(Id);
             if (ombrellone == null)
             {
-                // ID non esiste nel DB: nasconde il form e mostra errore invece di simulare un ombrellone libero
                 ombrelloneValido = false;
                 errore = $"Ombrellone {Id} non trovato.";
                 return;
             }
-            sessione = await Sessioni.GetSessioneAttivaAsync(Id);
-            if (categorie.Any()) categoriaSelezionata = categorie.First();
+            sessioni = await Sessioni.GetSessioniAttivePerOmbrelloneAsync(Id, DateCtx.DataSelezionata);
         }
         catch (Exception ex)
         {
             ombrelloneValido = false;
-            errore = $"Impossibile caricare i dati dell'ombrellone: {ex.Message}";
-        }
-    }
-
-    private void IniziaModifica()
-    {
-        nuovoNome = sessione?.NomeCliente;
-        isEditingNome = true;
-    }
-
-    private async Task SalvaNome()
-    {
-        if (sessione != null)
-        {
-            errore = null;
-            try
-            {
-                await Sessioni.AggiornaNomeSessioneAsync(sessione.Id, nuovoNome);
-                sessione.NomeCliente = nuovoNome;
-            }
-            catch (Exception ex)
-            {
-                errore = $"Impossibile salvare il nome: {ex.Message}";
-            }
-        }
-        isEditingNome = false;
-    }
-
-    private async Task EseguiAnnulla()
-    {
-        if (sessione != null)
-        {
-            errore = null;
-            try
-            {
-                await Sessioni.AnnullaSessioneAsync(sessione.Id);
-                Nav.NavigateTo("/");
-            }
-            catch (Exception ex)
-            {
-                mostraConfermaAnnulla = false;
-                errore = $"Impossibile annullare la sessione: {ex.Message}";
-            }
+            errore = $"Impossibile caricare i dati: {ex.Message}";
         }
     }
 
@@ -211,56 +92,12 @@
         errore = null;
         try
         {
-            await Sessioni.ApriSessioneAsync(Id, nomeCliente);
-            sessione = await Sessioni.GetSessioneAttivaAsync(Id);
+            var nuova = await Sessioni.ApriSessioneAsync(Id, nomeCliente, DateCtx.DataSelezionata);
+            Nav.NavigateTo("/conto/" + nuova.Id);
         }
         catch (Exception ex)
         {
             errore = $"Impossibile aprire la sessione: {ex.Message}";
         }
     }
-
-    private async Task Aggiungi(int prodottoId)
-    {
-        errore = null;
-        try
-        {
-            await Consumazioni.AggiungiConsumazione(sessione!.Id, prodottoId);
-            sessione = await Sessioni.GetSessioneAttivaAsync(Id);
-        }
-        catch (Exception ex)
-        {
-            errore = $"Impossibile aggiungere il prodotto: {ex.Message}";
-        }
-    }
-
-    private async Task Rimuovi(int prodottoId)
-    {
-        errore = null;
-        try
-        {
-            await Consumazioni.RimuoviConsumazione(sessione!.Id, prodottoId);
-            sessione = await Sessioni.GetSessioneAttivaAsync(Id);
-        }
-        catch (Exception ex)
-        {
-            errore = $"Impossibile rimuovere il prodotto: {ex.Message}";
-        }
-    }
-
-    private async Task ChiudiSessione()
-    {
-        errore = null;
-        try
-        {
-            await Sessioni.ChiudiSessioneAsync(sessione!.Id);
-            Nav.NavigateTo("/");
-        }
-        catch (Exception ex)
-        {
-            errore = $"Impossibile chiudere la sessione: {ex.Message}";
-        }
-    }
-
-    private void TornaDashboard() => Nav.NavigateTo("/");
 }

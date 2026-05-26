@@ -25,6 +25,7 @@ builder.Services.AddScoped<IProdottiService, ProdottiService>();
 builder.Services.AddScoped<ISessioniService, SessioniService>();
 builder.Services.AddScoped<IConsumazioniService, ConsumazioniService>();
 builder.Services.AddScoped<IImpostazioniService, ImpostazioniService>();
+builder.Services.AddScoped<BeachBar.Services.DateContext>();
 
 // ── Autenticazione ─────────────────────────────────────────────────────────
 // Due schemi in parallelo:

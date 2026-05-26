@@ -1,0 +1,256 @@
+@page "/conto/{Id:int}"
+@attribute [Authorize]
+@inject BeachBar.Infrastructure.Services.ISessioniService Sessioni
+@inject BeachBar.Infrastructure.Services.IProdottiService Prodotti
+@inject BeachBar.Infrastructure.Services.IConsumazioniService Consumazioni
+@inject BeachBar.Services.DateContext DateCtx
+@inject NavigationManager Nav
+
+<div class="scheda-layout">
+
+    <div class="colonna-sinistra">
+        <button class="btn-torna" @onclick="Torna">← Indietro</button>
+
+        @if (sessione == null && errore == null)
+        {
+            <p>Caricamento...</p>
+        }
+        else
+        {
+            <h2>@(sessione?.OmbrelloneId.HasValue == true ? $"Ombrellone {sessione.Ombrellone?.Numero}" : "Conto Extra")</h2>
+            <div style="font-size: 0.85rem; color: #6c757d; margin-bottom: 8px;">
+                📅 @((sessione?.DataRiferimento ?? DateCtx.DataSelezionata).ToString("dd MMMM yyyy", new System.Globalization.CultureInfo("it-IT")))
+            </div>
+
+            @if (errore != null)
+            {
+                <div style="background:#f8d7da; color:#721c24; border:1px solid #f5c6cb; padding:10px 14px; border-radius:8px; margin-bottom:12px;">
+                    ⚠️ @errore
+                </div>
+            }
+
+            @if (sessione != null)
+            {
+                <div class="nome-cliente-container" style="display: flex; justify-content: space-between; align-items: center;">
+                    @if (isEditingNome)
+                    {
+                        <input class="input-nome" @bind="nuovoNome" @onkeyup="@(async (e) => { if (e.Key == "Enter") await SalvaNome(); })" />
+                        <button @onclick="SalvaNome" style="background:none; border:none; cursor:pointer;">✔️</button>
+                    }
+                    else
+                    {
+                        <p class="nome-cliente" style="margin:0;">@(sessione.NomeCliente ?? "Cliente anonimo")</p>
+                        <button class="btn-edit" @onclick="IniziaModifica" style="background: transparent; border: none; cursor: pointer;">✏️</button>
+                    }
+                </div>
+
+                <div class="categorie-tabs">
+                    @foreach (var cat in categorie)
+                    {
+                        <button class="tab @(categoriaSelezionata == cat ? "tab-attivo" : "")"
+                                @onclick="() => categoriaSelezionata = cat">
+                            @cat
+                        </button>
+                    }
+                </div>
+
+                <div class="prodotti">
+                    @foreach (var p in prodottiFiltrati)
+                    {
+                        <button class="btn-prodotto" @onclick="() => Aggiungi(p.Id)">
+                            <span class="prod-nome">@p.Nome</span>
+                            <span class="prod-prezzo">€ @p.Prezzo.ToString("0.00")</span>
+                        </button>
+                    }
+                </div>
+            }
+        }
+    </div>
+
+    @if (sessione != null)
+    {
+        <div class="colonna-destra">
+            <h3>Scontrino</h3>
+            <p class="nome-cliente-scontrino">@(sessione.NomeCliente ?? "Cliente anonimo")</p>
+
+            <div class="scontrino-righe">
+                @if (!sessione.Consumazioni.Any())
+                {
+                    <p class="vuoto">Nessuna consumazione ancora.</p>
+                }
+                else
+                {
+                    @foreach (var c in sessione.Consumazioni)
+                    {
+                        <div class="riga-scontrino">
+                            <div class="riga-info">
+                                <span class="riga-nome">@c.Prodotto.Nome</span>
+                                <span class="riga-qty">x@(c.Quantita)</span>
+                            </div>
+                            <div class="riga-destra">
+                                <span class="riga-totale">€ @((c.Quantita * c.Prodotto.Prezzo).ToString("0.00"))</span>
+                                <button class="btn-rimuovi" @onclick="() => Rimuovi(c.ProdottoId)">−</button>
+                            </div>
+                        </div>
+                    }
+                }
+            </div>
+
+            <div class="totale-scontrino">
+                Totale: € @sessione.Consumazioni.Sum(c => c.Quantita * c.Prodotto.Prezzo).ToString("0.00")
+            </div>
+
+            <div class="azioni-scontrino" style="display: flex; flex-direction: column; gap: 10px; margin-top: 20px;">
+                <button class="btn-torna-dashboard" @onclick="Torna">Va bene così →</button>
+                @if (!mostraConfermaAnnulla)
+                {
+                    <button class="btn-chiudi" @onclick="ChiudiSessione">Chiudi e incassa</button>
+                    <button class="btn-annulla" @onclick="() => mostraConfermaAnnulla = true"
+                            style="background-color: #f8d7da; color: #721c24;">
+                        Annulla sessione
+                    </button>
+                }
+                else
+                {
+                    <div class="conferma-annulla" style="background: #fff3cd; padding: 15px; border-radius: 12px; text-align: center;">
+                        <p style="margin-bottom: 10px; color: #856404; font-weight: bold;">Confermi l'annullamento?</p>
+                        <div style="display: flex; gap: 10px;">
+                            <button @onclick="EseguiAnnulla" style="flex:1; background:#dc3545; color:white; border:none; padding:10px; border-radius:8px;">Sì</button>
+                            <button @onclick="() => mostraConfermaAnnulla = false" style="flex:1; background:#6c757d; color:white; border:none; padding:10px; border-radius:8px;">No</button>
+                        </div>
+                    </div>
+                }
+            </div>
+        </div>
+    }
+</div>
+
+@code {
+    [Parameter] public int Id { get; set; }
+
+    private BeachBar.Core.Entities.Sessione? sessione;
+    private List<BeachBar.Core.Entities.Prodotto> prodotti = new();
+    private string categoriaSelezionata = "";
+    private bool isEditingNome;
+    private string? nuovoNome;
+    private bool mostraConfermaAnnulla;
+    private string? errore;
+
+    private List<string> categorie => prodotti.Select(p => p.Categoria).Distinct().OrderBy(c => c).ToList();
+    private List<BeachBar.Core.Entities.Prodotto> prodottiFiltrati =>
+        prodotti.Where(p => p.Categoria == categoriaSelezionata).ToList();
+
+    protected override async Task OnInitializedAsync()
+    {
+        try
+        {
+            prodotti = await Prodotti.GetProdottiAsync();
+            sessione = await Sessioni.GetSessioneByIdAsync(Id);
+            if (sessione == null)
+            {
+                errore = $"Sessione {Id} non trovata.";
+                return;
+            }
+            if (sessione.Chiusa)
+            {
+                errore = "Questa sessione è già chiusa.";
+                sessione = null;
+                return;
+            }
+            if (categorie.Any()) categoriaSelezionata = categorie.First();
+        }
+        catch (Exception ex)
+        {
+            errore = $"Impossibile caricare la sessione: {ex.Message}";
+        }
+    }
+
+    private void IniziaModifica()
+    {
+        nuovoNome = sessione?.NomeCliente;
+        isEditingNome = true;
+    }
+
+    private async Task SalvaNome()
+    {
+        if (sessione != null)
+        {
+            errore = null;
+            try
+            {
+                await Sessioni.AggiornaNomeSessioneAsync(sessione.Id, nuovoNome);
+                sessione.NomeCliente = nuovoNome;
+            }
+            catch (Exception ex)
+            {
+                errore = $"Impossibile salvare il nome: {ex.Message}";
+            }
+        }
+        isEditingNome = false;
+    }
+
+    private async Task Aggiungi(int prodottoId)
+    {
+        errore = null;
+        try
+        {
+            await Consumazioni.AggiungiConsumazione(sessione!.Id, prodottoId);
+            sessione = await Sessioni.GetSessioneByIdAsync(Id);
+        }
+        catch (Exception ex)
+        {
+            errore = $"Impossibile aggiungere il prodotto: {ex.Message}";
+        }
+    }
+
+    private async Task Rimuovi(int prodottoId)
+    {
+        errore = null;
+        try
+        {
+            await Consumazioni.RimuoviConsumazione(sessione!.Id, prodottoId);
+            sessione = await Sessioni.GetSessioneByIdAsync(Id);
+        }
+        catch (Exception ex)
+        {
+            errore = $"Impossibile rimuovere il prodotto: {ex.Message}";
+        }
+    }
+
+    private async Task ChiudiSessione()
+    {
+        errore = null;
+        try
+        {
+            await Sessioni.ChiudiSessioneAsync(sessione!.Id);
+            Torna();
+        }
+        catch (Exception ex)
+        {
+            errore = $"Impossibile chiudere la sessione: {ex.Message}";
+        }
+    }
+
+    private async Task EseguiAnnulla()
+    {
+        errore = null;
+        try
+        {
+            await Sessioni.AnnullaSessioneAsync(sessione!.Id);
+            Torna();
+        }
+        catch (Exception ex)
+        {
+            mostraConfermaAnnulla = false;
+            errore = $"Impossibile annullare la sessione: {ex.Message}";
+        }
+    }
+
+    private void Torna()
+    {
+        if (sessione?.OmbrelloneId.HasValue == true)
+            Nav.NavigateTo("/ombrellone/" + sessione.OmbrelloneId.Value);
+        else
+            Nav.NavigateTo("/");
+    }
+}

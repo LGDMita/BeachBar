@@ -10,11 +10,39 @@ public class SessioniService : ISessioniService
 
     public SessioniService(BeachBarDbContext db) => _db = db;
 
-    public async Task<List<Ombrellone>> GetOmbrelloniAsync()
-        => await _db.Ombrelloni
-            .Include(o => o.Sessioni.Where(s => !s.Chiusa))
+    public async Task<List<Ombrellone>> GetOmbrelloniAsync(DateOnly data)
+    {
+        var ombrelloni = await _db.Ombrelloni
+            .AsNoTracking()
             .OrderBy(o => o.Numero)
             .ToListAsync();
+
+        // Solo sessioni legate a un ombrellone, aperte, per la data richiesta
+        var sessioniAperte = await _db.Sessioni
+            .AsNoTracking()
+            .Where(s => !s.Chiusa && s.OmbrelloneId != null && s.DataRiferimento == data)
+            .ToListAsync();
+
+        var perOmbrellone = sessioniAperte
+            .GroupBy(s => s.OmbrelloneId!.Value)
+            .ToDictionary(g => g.Key, g => g.ToList());
+
+        foreach (var o in ombrelloni)
+        {
+            if (perOmbrellone.TryGetValue(o.Id, out var sessioni))
+            {
+                o.Occupato = true;
+                o.Sessioni = sessioni;
+            }
+            else
+            {
+                o.Occupato = false;
+                o.Sessioni = new List<Sessione>();
+            }
+        }
+
+        return ombrelloni;
+    }
 
     public async Task<Ombrellone?> GetOmbrelloneByIdAsync(int id)
         => await _db.Ombrelloni.FindAsync(id);
@@ -40,33 +68,72 @@ public class SessioniService : ISessioniService
             .Include(s => s.Consumazioni).ThenInclude(c => c.Prodotto)
             .FirstOrDefaultAsync(s => s.Id == id);
 
-    public async Task<Sessione?> GetSessioneAttivaAsync(int ombrelloneId)
+    public async Task<List<Sessione>> GetSessioniAttivePerOmbrelloneAsync(int ombrelloneId, DateOnly data)
         => await _db.Sessioni
             .Include(s => s.Consumazioni).ThenInclude(c => c.Prodotto)
-            .FirstOrDefaultAsync(s => s.OmbrelloneId == ombrelloneId && !s.Chiusa);
+            .Where(s => s.OmbrelloneId == ombrelloneId && !s.Chiusa && s.DataRiferimento == data)
+            .OrderBy(s => s.Apertura)
+            .ToListAsync();
 
-    public async Task<List<Sessione>> GetStoricoSessioniAsync()
+    public async Task<Sessione?> GetSessioneAttivaAsync(int ombrelloneId, DateOnly data)
+        => await _db.Sessioni
+            .Include(s => s.Consumazioni).ThenInclude(c => c.Prodotto)
+            .FirstOrDefaultAsync(s => s.OmbrelloneId == ombrelloneId && !s.Chiusa && s.DataRiferimento == data);
+
+    public async Task<List<Sessione>> GetContiExtraAsync(DateOnly data)
+        => await _db.Sessioni
+            .Include(s => s.Consumazioni).ThenInclude(c => c.Prodotto)
+            .Where(s => s.OmbrelloneId == null && !s.Chiusa && s.DataRiferimento == data)
+            .OrderBy(s => s.Apertura)
+            .ToListAsync();
+
+    public async Task<List<Sessione>> GetStoricoSessioniAsync(DateOnly filtroData)
         => await _db.Sessioni
             .Include(s => s.Consumazioni).ThenInclude(c => c.Prodotto)
             .Include(s => s.Ombrellone)
-            .Where(s => s.Chiusa)
+            .Where(s => s.Chiusa && s.DataRiferimento == filtroData)
             .OrderByDescending(s => s.Chiusura)
             .ToListAsync();
 
-    public async Task ApriSessioneAsync(int ombrelloneId, string? nomeCliente)
+    public async Task<Sessione> ApriSessioneAsync(int ombrelloneId, string? nomeCliente, DateOnly dataRiferimento)
     {
         var ombrellone = await _db.Ombrelloni.FindAsync(ombrelloneId)
             ?? throw new InvalidOperationException($"Ombrellone {ombrelloneId} non trovato.");
 
-        ombrellone.Occupato = true;
-        _db.Sessioni.Add(new Sessione
+        if (dataRiferimento == DateOnly.FromDateTime(DateTime.UtcNow))
+            ombrellone.Occupato = true;
+
+        var nuova = new Sessione
         {
             OmbrelloneId = ombrelloneId,
             NomeCliente = nomeCliente,
             Apertura = DateTime.UtcNow,
-            Chiusa = false
-        });
+            Chiusa = false,
+            DataRiferimento = dataRiferimento
+        };
+        _db.Sessioni.Add(nuova);
         await _db.SaveChangesAsync();
+
+        await _db.Entry(nuova).Reference(s => s.Ombrellone).LoadAsync();
+        nuova.Consumazioni = new List<Consumazione>();
+        return nuova;
+    }
+
+    public async Task<Sessione> ApriContoExtraAsync(string? nome, DateOnly dataRiferimento)
+    {
+        var nuova = new Sessione
+        {
+            OmbrelloneId = null,
+            NomeCliente = nome,
+            Apertura = DateTime.UtcNow,
+            Chiusa = false,
+            DataRiferimento = dataRiferimento
+        };
+        _db.Sessioni.Add(nuova);
+        await _db.SaveChangesAsync();
+
+        nuova.Consumazioni = new List<Consumazione>();
+        return nuova;
     }
 
     public async Task ChiudiSessioneAsync(int sessioneId)
@@ -78,7 +145,16 @@ public class SessioniService : ISessioniService
 
         sessione.Chiusa = true;
         sessione.Chiusura = DateTime.UtcNow;
-        sessione.Ombrellone.Occupato = false;
+
+        // Libera il flag Occupato solo se è oggi e non ci sono altre sessioni aperte sullo stesso ombrellone
+        if (sessione.OmbrelloneId.HasValue && sessione.DataRiferimento == DateOnly.FromDateTime(DateTime.UtcNow))
+        {
+            var altreAperte = await _db.Sessioni.AnyAsync(s =>
+                s.OmbrelloneId == sessione.OmbrelloneId && !s.Chiusa && s.Id != sessioneId);
+            if (!altreAperte)
+                sessione.Ombrellone!.Occupato = false;
+        }
+
         await _db.SaveChangesAsync();
     }
 
@@ -89,8 +165,21 @@ public class SessioniService : ISessioniService
             .FirstOrDefaultAsync(s => s.Id == sessioneId)
             ?? throw new InvalidOperationException($"Sessione {sessioneId} non trovata.");
 
-        if (sessione.Ombrellone != null)
-            sessione.Ombrellone.Occupato = false;
+        bool eraOggi = sessione.DataRiferimento == DateOnly.FromDateTime(DateTime.UtcNow);
+        int? ombrelloneId = sessione.OmbrelloneId;
+        var ombrellone = sessione.Ombrellone;
+
+        // Controlla prima della rimozione se ci sono altre sessioni aperte (esclusa questa)
+        bool liberaOmbrellone = false;
+        if (ombrelloneId.HasValue && eraOggi)
+        {
+            var altreAperte = await _db.Sessioni.AnyAsync(s =>
+                s.OmbrelloneId == ombrelloneId && !s.Chiusa && s.Id != sessioneId);
+            liberaOmbrellone = !altreAperte;
+        }
+
+        if (liberaOmbrellone && ombrellone != null)
+            ombrellone.Occupato = false;
 
         _db.Sessioni.Remove(sessione);
         await _db.SaveChangesAsync();
@@ -121,11 +210,13 @@ public class SessioniService : ISessioniService
             .Where(s => !s.Chiusa)
             .ToListAsync();
 
+        var oggi = DateOnly.FromDateTime(DateTime.UtcNow);
         foreach (var s in sessioniAperte)
         {
             s.Chiusa = true;
             s.Chiusura = DateTime.UtcNow;
-            s.Ombrellone.Occupato = false;
+            if (s.OmbrelloneId.HasValue && s.DataRiferimento == oggi)
+                s.Ombrellone!.Occupato = false;
         }
 
         await _db.SaveChangesAsync();

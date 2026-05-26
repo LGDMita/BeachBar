@@ -3,6 +3,7 @@ using System;
 using BeachBar.Infrastructure.Data;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 
@@ -11,9 +12,11 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace BeachBar.Infrastructure.Migrations
 {
     [DbContext(typeof(BeachBarDbContext))]
-    partial class BeachBarDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260526150510_AddDataRiferimento")]
+    partial class AddDataRiferimento
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -1058,7 +1061,7 @@ namespace BeachBar.Infrastructure.Migrations
                     b.Property<string>("NomeCliente")
                         .HasColumnType("text");
 
-                    b.Property<int?>("OmbrelloneId")
+                    b.Property<int>("OmbrelloneId")
                         .HasColumnType("integer");
 
                     b.HasKey("Id");
@@ -1091,7 +1094,9 @@ namespace BeachBar.Infrastructure.Migrations
                 {
                     b.HasOne("BeachBar.Core.Entities.Ombrellone", "Ombrellone")
                         .WithMany("Sessioni")
-                        .HasForeignKey("OmbrelloneId");
+                        .HasForeignKey("OmbrelloneId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
 
                     b.Navigation("Ombrellone");
                 });

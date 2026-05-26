@@ -2,6 +2,7 @@
 @attribute [Authorize]
 @using BeachBar.Core.Entities
 @inject BeachBar.Infrastructure.Services.ISessioniService Sessioni
+@inject BeachBar.Services.DateContext DateCtx
 @inject NavigationManager Nav
 @inject IJSRuntime JS
 
@@ -11,6 +12,28 @@
     <div class="header-storico">
         <h1 class="titolo-storico">📋 Archivio Storico</h1>
         <button class="btn-chiudi-soft" @onclick='() => Nav.NavigateTo("/")'>Chiudi</button>
+    </div>
+
+    <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 16px;">
+        <button @onclick="GiornoPrec"
+                style="background: #e9ecef; border: none; border-radius: 8px; padding: 8px 14px; cursor: pointer; font-size: 1rem;">
+            ◀
+        </button>
+        <input type="date"
+               value="@DateCtx.DataSelezionata.ToString("yyyy-MM-dd")"
+               @onchange="OnDataChanged"
+               style="border: 1px solid #ced4da; border-radius: 8px; padding: 8px 12px; font-size: 0.95rem; cursor: pointer;" />
+        <button @onclick="GiornoSucc"
+                style="background: #e9ecef; border: none; border-radius: 8px; padding: 8px 14px; cursor: pointer; font-size: 1rem;">
+            ▶
+        </button>
+        @if (!DateCtx.IsOggi)
+        {
+            <button @onclick="TornaOggi"
+                    style="background: #0d6efd; color: white; border: none; border-radius: 8px; padding: 8px 14px; cursor: pointer; font-size: 0.85rem;">
+                Oggi
+            </button>
+        }
     </div>
 
     <div class="storico-card">
@@ -28,7 +51,7 @@
         {
             <div class="empty-state">
                 <div style="font-size: 3rem; margin-bottom: 1rem;">🏖️</div>
-                <p>Nessuno scontrino in archivio.</p>
+                <p>Nessuno scontrino per il @DateCtx.DataSelezionata.ToString("dd MMMM yyyy", new System.Globalization.CultureInfo("it-IT")).</p>
             </div>
         }
         else
@@ -36,7 +59,7 @@
             <table class="tabella-storico">
                 <thead>
                     <tr>
-                        <th>Periodo</th>
+                        <th>Chiusura</th>
                         <th>Postazione</th>
                         <th>Cliente</th>
                         <th>Totale Incassato</th>
@@ -55,7 +78,14 @@
                             </td>
                             <td>
                                 <div class="date-stack">
-                                    <span class="badge-item">Ombrellone #@(s.Ombrellone?.Numero ?? s.OmbrelloneId)</span>
+                                    @if (s.OmbrelloneId.HasValue)
+                                    {
+                                        <span class="badge-item">Ombrellone #@(s.Ombrellone?.Numero ?? s.OmbrelloneId)</span>
+                                    }
+                                    else
+                                    {
+                                        <span class="badge-item">Conto Extra</span>
+                                    }
                                     <span class="date-sub">Sessione #@s.Id</span>
                                 </div>
                             </td>
@@ -86,15 +116,30 @@
 
     private async Task CaricaDati()
     {
+        errore = null;
+        sessioni = null;
         try
         {
-            sessioni = await Sessioni.GetStoricoSessioniAsync();
+            sessioni = await Sessioni.GetStoricoSessioniAsync(DateCtx.DataSelezionata);
         }
         catch (Exception ex)
         {
             errore = $"Impossibile caricare lo storico: {ex.Message}";
         }
     }
+
+    private async Task OnDataChanged(ChangeEventArgs e)
+    {
+        if (DateOnly.TryParse(e.Value?.ToString(), out var data))
+        {
+            DateCtx.Imposta(data);
+            await CaricaDati();
+        }
+    }
+
+    private async Task GiornoPrec() { DateCtx.Arretra(); await CaricaDati(); }
+    private async Task GiornoSucc() { DateCtx.Avanza(); await CaricaDati(); }
+    private async Task TornaOggi() { DateCtx.TornaOggi(); await CaricaDati(); }
 
     private async Task Elimina(int id)
     {

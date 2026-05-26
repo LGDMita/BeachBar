@@ -51,22 +51,29 @@ public class ImpostazioniService : IImpostazioniService
         await _db.SaveChangesAsync();
     }
 
-    public async Task<(decimal aperto, decimal incassato, int ombrelloniAttivi)> GetStatisticheAsync()
+    public async Task<(decimal aperto, decimal incassato, int ombrelloniAttivi)> GetStatisticheAsync(DateOnly data)
     {
-        var imp = await GetConfigAsync();
-        var dataInizioFiltro = imp.UltimoResetStatistiche ?? DateTime.UtcNow.Date;
-
         var aperto = await _db.Sessioni
-            .Where(s => !s.Chiusa)
+            .Where(s => !s.Chiusa && s.DataRiferimento == data)
             .SelectMany(s => s.Consumazioni)
             .SumAsync(c => (decimal?)c.Quantita * c.Prodotto.Prezzo) ?? 0;
 
-        var incassato = await _db.Sessioni
-            .Where(s => s.Chiusa && s.Chiusura >= dataInizioFiltro)
+        // Per il giorno corrente si applica il filtro di reset visivo, per gli altri giorni si mostra il totale completo.
+        var oggi = DateOnly.FromDateTime(DateTime.UtcNow);
+        IQueryable<Sessione> chiuseQuery = _db.Sessioni.Where(s => s.Chiusa && s.DataRiferimento == data);
+        if (data == oggi)
+        {
+            var imp = await GetConfigAsync();
+            if (imp.UltimoResetStatistiche.HasValue)
+                chiuseQuery = chiuseQuery.Where(s => s.Chiusura >= imp.UltimoResetStatistiche.Value);
+        }
+
+        var incassato = await chiuseQuery
             .SelectMany(s => s.Consumazioni)
             .SumAsync(c => (decimal?)c.Quantita * c.Prodotto.Prezzo) ?? 0;
 
-        var attivi = await _db.Ombrelloni.CountAsync(o => o.Occupato);
+        var attivi = await _db.Sessioni
+            .CountAsync(s => !s.Chiusa && s.DataRiferimento == data && s.OmbrelloneId != null);
 
         return (aperto, incassato, attivi);
     }

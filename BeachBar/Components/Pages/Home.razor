@@ -2,6 +2,7 @@
 @attribute [Authorize]
 @inject BeachBar.Infrastructure.Services.ISessioniService Sessioni
 @inject BeachBar.Infrastructure.Services.IImpostazioniService Impostazioni
+@inject BeachBar.Services.DateContext DateCtx
 @inject NavigationManager Nav
 
 <div class="dashboard">
@@ -16,6 +17,28 @@
         </div>
     </div>
 
+    <div class="date-navigator" style="display: flex; align-items: center; gap: 8px; margin: 12px 0;">
+        <button @onclick="GiornoPrec"
+                style="background: #e9ecef; border: none; border-radius: 8px; padding: 8px 14px; cursor: pointer; font-size: 1rem;">
+            ◀
+        </button>
+        <input type="date"
+               value="@DateCtx.DataSelezionata.ToString("yyyy-MM-dd")"
+               @onchange="OnDataChanged"
+               style="border: 1px solid #ced4da; border-radius: 8px; padding: 8px 12px; font-size: 0.95rem; cursor: pointer;" />
+        <button @onclick="GiornoSucc"
+                style="background: #e9ecef; border: none; border-radius: 8px; padding: 8px 14px; cursor: pointer; font-size: 1rem;">
+            ▶
+        </button>
+        @if (!DateCtx.IsOggi)
+        {
+            <button @onclick="TornaOggi"
+                    style="background: #0d6efd; color: white; border: none; border-radius: 8px; padding: 8px 14px; cursor: pointer; font-size: 0.85rem;">
+                Oggi
+            </button>
+        }
+    </div>
+
     <div class="statistiche">
         <div class="stat-card">
             <span class="stat-valore">@ombrelloniAttivi</span>
@@ -27,7 +50,7 @@
         </div>
         <div class="stat-card">
             <span class="stat-valore">€ @incassato.ToString("0.00")</span>
-            <span class="stat-label">Incassato oggi</span>
+            <span class="stat-label">@(DateCtx.IsOggi ? "Incassato oggi" : "Incassato")</span>
         </div>
     </div>
 
@@ -47,12 +70,19 @@
             @foreach (var o in ombrelloni)
             {
                 <button class="ombrellone @(o.Occupato ? "occupato" : "libero")"
-                        @onclick="() => Vai(o.Id)">
+                        @onclick="() => Vai(o)">
                     <span class="numero">@o.Numero</span>
                     @if (o.Occupato)
                     {
-                        var nome = o.Sessioni.FirstOrDefault()?.NomeCliente;
-                        <span class="stato">@(string.IsNullOrWhiteSpace(nome) ? "Occupato" : $"Occupato: {nome}")</span>
+                        @if (o.Sessioni.Count == 1)
+                        {
+                            var nome = o.Sessioni.First().NomeCliente;
+                            <span class="stato">@(string.IsNullOrWhiteSpace(nome) ? "Occupato" : nome)</span>
+                        }
+                        else
+                        {
+                            <span class="stato">@o.Sessioni.Count conti</span>
+                        }
                     }
                     else
                     {
@@ -61,23 +91,85 @@
                 </button>
             }
         </div>
+
+        @* Sezione conti extra (ospiti senza ombrellone) *@
+        <div style="margin-top: 28px;">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
+                <h3 style="margin: 0;">Conti extra</h3>
+                @if (!mostraNuovoContoExtra)
+                {
+                    <button @onclick="() => mostraNuovoContoExtra = true"
+                            style="background: #198754; color: white; border: none; border-radius: 8px; padding: 8px 14px; cursor: pointer; font-size: 0.85rem;">
+                        + Nuovo conto
+                    </button>
+                }
+            </div>
+
+            @if (mostraNuovoContoExtra)
+            {
+                <div style="background: white; border-radius: 12px; padding: 16px; margin-bottom: 12px; box-shadow: 0 2px 8px rgba(0,0,0,0.08); display: flex; gap: 10px; align-items: center;">
+                    <input class="input-nome" placeholder="Nome ospite (opzionale)" @bind="nomeContoExtra"
+                           style="flex: 1; margin: 0;" />
+                    <button class="btn-apri" @onclick="ApriContoExtra" style="padding: 10px 18px; font-size: 0.9rem;">
+                        @(DateCtx.IsOggi ? "Apri" : "Prenota")
+                    </button>
+                    <button @onclick="() => { mostraNuovoContoExtra = false; nomeContoExtra = null; }"
+                            style="background: #e9ecef; border: none; border-radius: 8px; padding: 10px 14px; cursor: pointer;">
+                        ✕
+                    </button>
+                </div>
+            }
+
+            @if (contiExtra != null && contiExtra.Any())
+            {
+                @foreach (var c in contiExtra)
+                {
+                    var totale = c.Consumazioni.Sum(x => x.Quantita * x.Prodotto.Prezzo);
+                    <div style="background: white; border-radius: 12px; padding: 14px 16px; margin-bottom: 10px; box-shadow: 0 2px 8px rgba(0,0,0,0.08); display: flex; justify-content: space-between; align-items: center;">
+                        <div>
+                            <div style="font-weight: 600;">@(string.IsNullOrWhiteSpace(c.NomeCliente) ? "Ospite" : c.NomeCliente)</div>
+                            <div style="font-size: 0.82rem; color: #6c757d; margin-top: 3px;">
+                                @c.Consumazioni.Sum(x => x.Quantita) prodotti · € @totale.ToString("0.00")
+                            </div>
+                        </div>
+                        <button class="btn-apri" @onclick='() => Nav.NavigateTo("/conto/" + c.Id)'
+                                style="padding: 8px 18px; font-size: 0.9rem;">
+                            Gestisci →
+                        </button>
+                    </div>
+                }
+            }
+            else if (contiExtra != null && !contiExtra.Any() && !mostraNuovoContoExtra)
+            {
+                <p style="color: #adb5bd; font-size: 0.9rem; margin: 0;">Nessun conto extra aperto.</p>
+            }
+        </div>
     }
 </div>
 
 @code {
     private List<BeachBar.Core.Entities.Ombrellone>? ombrelloni;
+    private List<BeachBar.Core.Entities.Sessione>? contiExtra;
     private decimal aperto;
     private decimal incassato;
     private int ombrelloniAttivi;
     private int colonne = 4;
     private string? errore;
+    private bool mostraNuovoContoExtra;
+    private string? nomeContoExtra;
 
-    protected override async Task OnInitializedAsync()
+    protected override async Task OnInitializedAsync() => await CaricaDati();
+
+    private async Task CaricaDati()
     {
+        errore = null;
+        ombrelloni = null;
+        contiExtra = null;
         try
         {
-            ombrelloni = await Sessioni.GetOmbrelloniAsync();
-            var stats = await Impostazioni.GetStatisticheAsync();
+            ombrelloni = await Sessioni.GetOmbrelloniAsync(DateCtx.DataSelezionata);
+            contiExtra = await Sessioni.GetContiExtraAsync(DateCtx.DataSelezionata);
+            var stats = await Impostazioni.GetStatisticheAsync(DateCtx.DataSelezionata);
             aperto = stats.aperto;
             incassato = stats.incassato;
             ombrelloniAttivi = stats.ombrelloniAttivi;
@@ -90,5 +182,39 @@
         }
     }
 
-    private void Vai(int id) => Nav.NavigateTo("/ombrellone/" + id);
+    private async Task OnDataChanged(ChangeEventArgs e)
+    {
+        if (DateOnly.TryParse(e.Value?.ToString(), out var data))
+        {
+            DateCtx.Imposta(data);
+            await CaricaDati();
+        }
+    }
+
+    private async Task GiornoPrec() { DateCtx.Arretra(); await CaricaDati(); }
+    private async Task GiornoSucc() { DateCtx.Avanza(); await CaricaDati(); }
+    private async Task TornaOggi() { DateCtx.TornaOggi(); await CaricaDati(); }
+
+    private void Vai(BeachBar.Core.Entities.Ombrellone o)
+    {
+        // Navigazione smart: se c'è esattamente una sessione aperta, vai direttamente al conto
+        if (o.Sessioni.Count == 1)
+            Nav.NavigateTo("/conto/" + o.Sessioni.First().Id);
+        else
+            Nav.NavigateTo("/ombrellone/" + o.Id);
+    }
+
+    private async Task ApriContoExtra()
+    {
+        errore = null;
+        try
+        {
+            var nuova = await Sessioni.ApriContoExtraAsync(nomeContoExtra, DateCtx.DataSelezionata);
+            Nav.NavigateTo("/conto/" + nuova.Id);
+        }
+        catch (Exception ex)
+        {
+            errore = $"Impossibile aprire il conto: {ex.Message}";
+        }
+    }
 }

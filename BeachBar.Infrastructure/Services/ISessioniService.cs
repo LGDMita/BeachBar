@@ -4,8 +4,8 @@ namespace BeachBar.Infrastructure.Services;
 
 public interface ISessioniService
 {
-    /// <summary>Restituisce tutti gli ombrelloni ordinati per numero.</summary>
-    Task<List<Ombrellone>> GetOmbrelloniAsync();
+    /// <summary>Restituisce gli ombrelloni con tutte le sessioni aperte per la data specificata.</summary>
+    Task<List<Ombrellone>> GetOmbrelloniAsync(DateOnly data);
 
     /// <summary>Restituisce un ombrellone per ID, o null se non esiste.</summary>
     Task<Ombrellone?> GetOmbrelloneByIdAsync(int id);
@@ -19,16 +19,25 @@ public interface ISessioniService
     /// <summary>Restituisce una sessione per ID con ombrellone e consumazioni inclusi, o null se non esiste.</summary>
     Task<Sessione?> GetSessioneByIdAsync(int id);
 
-    /// <summary>Restituisce la sessione aperta di un ombrellone, o null se l'ombrellone è libero.</summary>
-    Task<Sessione?> GetSessioneAttivaAsync(int ombrelloneId);
+    /// <summary>Restituisce tutte le sessioni aperte di un ombrellone per la data specificata.</summary>
+    Task<List<Sessione>> GetSessioniAttivePerOmbrelloneAsync(int ombrelloneId, DateOnly data);
 
-    /// <summary>Restituisce lo storico delle sessioni chiuse, dalla più recente.</summary>
-    Task<List<Sessione>> GetStoricoSessioniAsync();
+    /// <summary>Restituisce la prima sessione aperta di un ombrellone per la data specificata (usato dall'API).</summary>
+    Task<Sessione?> GetSessioneAttivaAsync(int ombrelloneId, DateOnly data);
 
-    /// <summary>Apre una nuova sessione e segna l'ombrellone come occupato.</summary>
-    Task ApriSessioneAsync(int ombrelloneId, string? nomeCliente);
+    /// <summary>Restituisce tutte le sessioni aperte senza ombrellone (conti extra/volanti) per la data specificata.</summary>
+    Task<List<Sessione>> GetContiExtraAsync(DateOnly data);
 
-    /// <summary>Chiude la sessione, registra la data di chiusura e libera l'ombrellone.</summary>
+    /// <summary>Restituisce lo storico delle sessioni chiuse per la data specificata, dalla più recente.</summary>
+    Task<List<Sessione>> GetStoricoSessioniAsync(DateOnly filtroData);
+
+    /// <summary>Apre una nuova sessione su un ombrellone per la data specificata. Restituisce la sessione creata.</summary>
+    Task<Sessione> ApriSessioneAsync(int ombrelloneId, string? nomeCliente, DateOnly dataRiferimento);
+
+    /// <summary>Apre un conto extra senza ombrellone (ospite volante). Restituisce la sessione creata.</summary>
+    Task<Sessione> ApriContoExtraAsync(string? nome, DateOnly dataRiferimento);
+
+    /// <summary>Chiude la sessione, registra la data di chiusura e libera l'ombrellone se non ha altre sessioni aperte oggi.</summary>
     Task ChiudiSessioneAsync(int sessioneId);
 
     Task AnnullaSessioneAsync(int sessioneId);

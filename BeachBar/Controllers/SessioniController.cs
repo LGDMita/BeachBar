@@ -7,10 +7,6 @@ using Microsoft.AspNetCore.Mvc;
 
 namespace BeachBar.Controllers;
 
-/// <summary>
-/// Gestisce il ciclo di vita delle sessioni: apertura, consultazione e chiusura.
-/// Una sessione rappresenta il "conto aperto" di un cliente su un ombrellone.
-/// </summary>
 [ApiController]
 [Route("api/[controller]")]
 [Authorize(AuthenticationSchemes = JwtBearerDefaults.AuthenticationScheme)]
@@ -25,7 +21,6 @@ public class SessioniController : ControllerBase
         _logger = logger;
     }
 
-    /// <summary>Restituisce tutte le sessioni (aperte e chiuse).</summary>
     [HttpGet]
     [ProducesResponseType(typeof(List<SessioneDto>), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status500InternalServerError)]
@@ -43,7 +38,6 @@ public class SessioniController : ControllerBase
         }
     }
 
-    /// <summary>Restituisce solo le sessioni attualmente aperte.</summary>
     [HttpGet("aperte")]
     [ProducesResponseType(typeof(List<SessioneDto>), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status500InternalServerError)]
@@ -61,7 +55,6 @@ public class SessioniController : ControllerBase
         }
     }
 
-    /// <summary>Restituisce una singola sessione con l'elenco completo delle consumazioni.</summary>
     [HttpGet("{id:int}")]
     [ProducesResponseType(typeof(SessioneDto), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
@@ -83,15 +76,11 @@ public class SessioniController : ControllerBase
         }
     }
 
-    /// <summary>
-    /// Apre una nuova sessione per un ombrellone.
-    /// Verifica che l'ombrellone esista e che non abbia già una sessione aperta.
-    /// </summary>
+    /// <summary>Apre una sessione su un ombrellone. Consente più sessioni contemporanee sullo stesso ombrellone.</summary>
     [HttpPost]
     [ProducesResponseType(typeof(SessioneDto), StatusCodes.Status201Created)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
-    [ProducesResponseType(StatusCodes.Status409Conflict)]
     [ProducesResponseType(StatusCodes.Status500InternalServerError)]
     public async Task<IActionResult> ApriSessione([FromBody] ApriSessioneRequest request)
     {
@@ -104,17 +93,9 @@ public class SessioniController : ControllerBase
             if (ombrellone == null)
                 return NotFound("Ombrellone non trovato");
 
-            var sessioneEsistente = await _sessioni.GetSessioneAttivaAsync(request.OmbrelloneId);
-            if (sessioneEsistente != null)
-                return Conflict("Esiste già una sessione aperta per questo ombrellone");
-
-            await _sessioni.ApriSessioneAsync(request.OmbrelloneId, request.NomeCliente);
-
-            // Il servizio non restituisce la sessione appena creata,
-            // quindi la recuperiamo subito dopo con una seconda query.
-            var nuovaSessione = await _sessioni.GetSessioneAttivaAsync(request.OmbrelloneId);
-            var dto = SessioneDto.FromEntity(nuovaSessione!);
-            return CreatedAtAction(nameof(GetSessione), new { id = dto.Id }, dto);
+            var data = request.DataRiferimento ?? DateOnly.FromDateTime(DateTime.UtcNow);
+            var nuovaSessione = await _sessioni.ApriSessioneAsync(request.OmbrelloneId, request.NomeCliente, data);
+            return CreatedAtAction(nameof(GetSessione), new { id = nuovaSessione.Id }, SessioneDto.FromEntity(nuovaSessione));
         }
         catch (Exception ex)
         {
@@ -123,10 +104,25 @@ public class SessioniController : ControllerBase
         }
     }
 
-    /// <summary>
-    /// Chiude una sessione e calcola il totale finale.
-    /// Una sessione già chiusa non può essere chiusa di nuovo (409 Conflict).
-    /// </summary>
+    /// <summary>Apre un conto extra senza ombrellone (ospite volante).</summary>
+    [HttpPost("extra")]
+    [ProducesResponseType(typeof(SessioneDto), StatusCodes.Status201Created)]
+    [ProducesResponseType(StatusCodes.Status500InternalServerError)]
+    public async Task<IActionResult> ApriContoExtra([FromBody] ApriContoExtraRequest request)
+    {
+        try
+        {
+            var data = request.DataRiferimento ?? DateOnly.FromDateTime(DateTime.UtcNow);
+            var nuova = await _sessioni.ApriContoExtraAsync(request.NomeCliente, data);
+            return CreatedAtAction(nameof(GetSessione), new { id = nuova.Id }, SessioneDto.FromEntity(nuova));
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Errore nell'apertura del conto extra");
+            return StatusCode(500, "Errore interno del server.");
+        }
+    }
+
     [HttpPut("{id:int}/chiudi")]
     [ProducesResponseType(typeof(SessioneDto), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
@@ -145,7 +141,6 @@ public class SessioniController : ControllerBase
 
             await _sessioni.ChiudiSessioneAsync(id);
 
-            // Rileggiamo dopo la chiusura per includere data di chiusura e totale aggiornato.
             var sessioneChiusa = await _sessioni.GetSessioneByIdAsync(id);
             return Ok(SessioneDto.FromEntity(sessioneChiusa!));
         }
