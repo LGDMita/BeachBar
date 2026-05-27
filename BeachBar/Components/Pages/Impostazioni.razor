@@ -3,11 +3,9 @@
 @inject BeachBar.Infrastructure.Services.IProdottiService Prodotti
 @inject BeachBar.Infrastructure.Services.ISessioniService Sessioni
 @inject BeachBar.Infrastructure.Services.IImpostazioniService ImpostazioniSvc
-@inject NavigationManager Nav
 
 <div class="dashboard">
-    <button class="btn-torna" @onclick="TornaDashboard">← Dashboard</button>
-    <h1 class="titolo">⚙️ Impostazioni</h1>
+    <h1 class="titolo">Impostazioni</h1>
 
     <div class="tabs-impostazioni">
         <button class="tab @(sezione == "spiaggia" ? "tab-attivo" : "")" @onclick='() => sezione = "spiaggia"'>🏖️ Spiaggia</button>
@@ -198,8 +196,6 @@
 </div>
 
 @code {
-    private void TornaDashboard() => Nav.NavigateTo("/");
-
     private string sezione = "spiaggia";
 
     // Spiaggia

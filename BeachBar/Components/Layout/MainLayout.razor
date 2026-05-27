@@ -1,6 +1,26 @@
 @inherits LayoutComponentBase
 
-@Body
+<div class="belix-shell">
+    <nav class="belix-nav">
+        <a href="/" class="belix-brand">
+            <img src="logo-belix.png" class="belix-logo-img" alt="Belix" />
+            <span class="belix-brand-name">Belix</span>
+        </a>
+        <div class="belix-nav-links">
+            <NavLink href="/" class="nav-link" Match="NavLinkMatch.All">Dashboard</NavLink>
+            <NavLink href="/storico" class="nav-link">Storico</NavLink>
+            <NavLink href="/impostazioni" class="nav-link">Impostazioni</NavLink>
+        </div>
+    </nav>
+
+    <main class="belix-main">
+        @Body
+    </main>
+
+    <footer class="belix-footer">
+        Belix &copy; 2025
+    </footer>
+</div>
 
 <div id="blazor-error-ui" data-nosnippet>
     An unhandled error has occurred.

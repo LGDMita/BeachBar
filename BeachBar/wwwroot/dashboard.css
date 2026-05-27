@@ -1,32 +1,25 @@
-﻿body {
-}
 .dashboard {
     padding: 20px;
-    max-width: 900px;
+    max-width: 960px;
     margin: 0 auto;
-}
-
-.titolo {
-    text-align: center;
-    font-size: 2rem;
-    margin-bottom: 30px;
 }
 
 .statistiche {
     display: grid;
     grid-template-columns: repeat(3, 1fr);
     gap: 16px;
-    margin-bottom: 30px;
+    margin-bottom: 28px;
 }
 
 .stat-card {
-    background: #f8f9fa;
+    background: white;
     border-radius: 16px;
     padding: 20px;
     display: flex;
     flex-direction: column;
     align-items: center;
     gap: 6px;
+    box-shadow: 0 1px 4px rgba(0,0,0,0.06);
 }
 
 .stat-valore {
@@ -39,6 +32,8 @@
     font-size: 0.85rem;
     color: #888;
 }
+
+/* ─── Griglia ombrelloni ─────────────────────── */
 
 .griglia-wrapper {
     overflow-x: auto;
@@ -97,16 +92,132 @@
     color: #721c24;
 }
 
-.header-dashboard {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    margin-bottom: 30px;
+/* ─── Conti volanti ──────────────────────────── */
+
+.conti-extra-section {
+    margin-top: 32px;
+    background: white;
+    border-radius: 20px;
+    padding: 20px 24px;
+    box-shadow: 0 1px 4px rgba(0,0,0,0.06);
 }
 
-    .header-dashboard .titolo {
-        margin-bottom: 0;
-    }
+.conti-extra-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 16px;
+}
+
+.conti-extra-titolo {
+    margin: 0 0 2px;
+    font-size: 1.1rem;
+}
+
+.conti-extra-subtitle {
+    font-size: 0.82rem;
+    color: #adb5bd;
+}
+
+.btn-nuovo-conto {
+    background: #198754;
+    color: white;
+    border: none;
+    border-radius: 10px;
+    padding: 9px 18px;
+    font-size: 0.9rem;
+    font-weight: 600;
+    cursor: pointer;
+    flex-shrink: 0;
+}
+
+.nuovoconto-form {
+    background: #f8f9fa;
+    border-radius: 12px;
+    padding: 14px;
+    margin-bottom: 16px;
+    display: flex;
+    gap: 10px;
+    align-items: center;
+    flex-wrap: wrap;
+}
+
+.nuovoconto-input {
+    flex: 1;
+    min-width: 140px;
+    margin: 0;
+}
+
+.nuovoconto-select {
+    padding: 10px 12px;
+    border: 2px solid #ccc;
+    border-radius: 10px;
+    font-size: 0.95rem;
+    background: white;
+    min-width: 160px;
+}
+
+.nuovoconto-azioni {
+    display: flex;
+    gap: 8px;
+    align-items: center;
+}
+
+.btn-annulla-form {
+    background: #e9ecef;
+    border: none;
+    border-radius: 8px;
+    padding: 10px 14px;
+    cursor: pointer;
+    font-size: 1rem;
+}
+
+.conti-extra-griglia {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+    gap: 10px;
+}
+
+.conto-extra-card {
+    background: #f8f9fa;
+    border-radius: 12px;
+    padding: 14px 16px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 12px;
+}
+
+.conto-extra-info {
+    min-width: 0;
+}
+
+.conto-extra-nome {
+    font-weight: 600;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.conto-extra-meta {
+    font-size: 0.82rem;
+    color: #6c757d;
+    margin-top: 3px;
+}
+
+.conto-extra-btn {
+    padding: 9px 16px;
+    font-size: 1rem;
+    flex-shrink: 0;
+}
+
+.conti-extra-vuoto {
+    color: #adb5bd;
+    font-size: 0.9rem;
+    margin: 0;
+}
+
+/* ─── Shared buttons ─────────────────────────── */
 
 .btn-impostazioni {
     padding: 10px 20px;
@@ -117,20 +228,11 @@
     cursor: pointer;
 }
 
+/* ─── Mobile ─────────────────────────────────── */
+
 @media (max-width: 600px) {
     .dashboard {
         padding: 12px;
-    }
-
-    .header-dashboard {
-        flex-direction: column;
-        align-items: flex-start;
-        gap: 12px;
-    }
-
-    .titolo {
-        font-size: 1.5rem;
-        margin-bottom: 16px;
     }
 
     .statistiche {
@@ -162,5 +264,26 @@
 
     .numero {
         font-size: 1.5rem;
+    }
+
+    .conti-extra-section {
+        padding: 16px;
+    }
+
+    .nuovoconto-form {
+        flex-direction: column;
+        align-items: stretch;
+    }
+
+    .nuovoconto-select {
+        width: 100%;
+    }
+
+    .nuovoconto-azioni {
+        justify-content: flex-end;
+    }
+
+    .conti-extra-griglia {
+        grid-template-columns: 1fr;
     }
 }

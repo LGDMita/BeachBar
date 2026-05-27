@@ -6,18 +6,8 @@
 @inject NavigationManager Nav
 
 <div class="dashboard">
-    <div class="header-dashboard">
-        <h1 class="titolo">🏖️ Beach Bar</h1>
-        <div class="header-azioni" style="display: flex; gap: 10px;">
-            <button class="btn-storico" @onclick='() => Nav.NavigateTo("/storico")'
-                    style="background-color: #6c757d; color: white; border: none; padding: 10px 15px; border-radius: 8px; cursor: pointer; display: flex; align-items: center; gap: 5px;">
-                📋 Storico
-            </button>
-            <button class="btn-impostazioni" @onclick='() => Nav.NavigateTo("/impostazioni")'>⚙️ Impostazioni</button>
-        </div>
-    </div>
 
-    <div class="date-navigator" style="display: flex; align-items: center; gap: 8px; margin: 12px 0;">
+    <div class="date-navigator" style="display: flex; align-items: center; gap: 8px; margin-bottom: 20px;">
         <button @onclick="GiornoPrec"
                 style="background: #e9ecef; border: none; border-radius: 8px; padding: 8px 14px; cursor: pointer; font-size: 1rem;">
             ◀
@@ -67,87 +57,96 @@
     else
     {
         <div class="griglia-wrapper">
-        <div class="griglia" style="grid-template-columns: repeat(@colonne, 120px);">
-            @foreach (var o in ombrelloni)
-            {
-                <button class="ombrellone @(o.Occupato ? "occupato" : "libero")"
-                        @onclick="() => Vai(o)">
-                    <span class="numero">@o.Numero</span>
-                    @if (o.Occupato)
-                    {
-                        @if (o.Sessioni.Count == 1)
+            <div class="griglia" style="grid-template-columns: repeat(@colonne, 120px);">
+                @foreach (var o in ombrelloni)
+                {
+                    <button class="ombrellone @(o.Occupato ? "occupato" : "libero")"
+                            @onclick="() => Vai(o)">
+                        <span class="numero">@o.Numero</span>
+                        @if (o.Occupato)
                         {
-                            var nome = o.Sessioni.First().NomeCliente;
-                            <span class="stato">Occupato</span>
-                            @if (!string.IsNullOrWhiteSpace(nome))
+                            @if (o.Sessioni.Count == 1)
                             {
-                                <span class="nome-cliente">@nome</span>
+                                var nome = o.Sessioni.First().NomeCliente;
+                                <span class="stato">Occupato</span>
+                                @if (!string.IsNullOrWhiteSpace(nome))
+                                {
+                                    <span class="nome-cliente">@nome</span>
+                                }
+                            }
+                            else
+                            {
+                                <span class="stato">@o.Sessioni.Count conti</span>
                             }
                         }
                         else
                         {
-                            <span class="stato">@o.Sessioni.Count conti</span>
+                            <span class="stato">Libero</span>
                         }
-                    }
-                    else
-                    {
-                        <span class="stato">Libero</span>
-                    }
-                </button>
-            }
-        </div>
+                    </button>
+                }
+            </div>
         </div>
 
-        @* Sezione conti extra (ospiti senza ombrellone) *@
-        <div style="margin-top: 28px;">
-            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
-                <h3 style="margin: 0;">Conti extra</h3>
+        <div class="conti-extra-section">
+            <div class="conti-extra-header">
+                <div>
+                    <h3 class="conti-extra-titolo">Conti volanti</h3>
+                    <span class="conti-extra-subtitle">Clienti senza postazione fissa</span>
+                </div>
                 @if (!mostraNuovoContoExtra)
                 {
-                    <button @onclick="() => mostraNuovoContoExtra = true"
-                            style="background: #198754; color: white; border: none; border-radius: 8px; padding: 8px 14px; cursor: pointer; font-size: 0.85rem;">
-                        + Nuovo conto
+                    <button class="btn-nuovo-conto" @onclick="() => mostraNuovoContoExtra = true">
+                        + Nuovo
                     </button>
                 }
             </div>
 
             @if (mostraNuovoContoExtra)
             {
-                <div style="background: white; border-radius: 12px; padding: 16px; margin-bottom: 12px; box-shadow: 0 2px 8px rgba(0,0,0,0.08); display: flex; gap: 10px; align-items: center;">
-                    <input class="input-nome" placeholder="Nome ospite (opzionale)" @bind="nomeContoExtra"
-                           style="flex: 1; margin: 0;" />
-                    <button class="btn-apri" @onclick="ApriContoExtra" style="padding: 10px 18px; font-size: 0.9rem;">
-                        @(DateCtx.IsOggi ? "Apri" : "Prenota")
-                    </button>
-                    <button @onclick="() => { mostraNuovoContoExtra = false; nomeContoExtra = null; }"
-                            style="background: #e9ecef; border: none; border-radius: 8px; padding: 10px 14px; cursor: pointer;">
-                        ✕
-                    </button>
+                <div class="nuovoconto-form">
+                    <input class="input-nome nuovoconto-input" placeholder="Nome cliente (opzionale)" @bind="nomeContoExtra" />
+                    <select class="nuovoconto-select" @bind="ombrelloneExtraStr">
+                        <option value="">Nessun ombrellone</option>
+                        @foreach (var o in ombrelloni)
+                        {
+                            <option value="@o.Id">Ombrellone @o.Numero</option>
+                        }
+                    </select>
+                    <div class="nuovoconto-azioni">
+                        <button class="btn-apri" @onclick="ApriContoExtra">
+                            @(DateCtx.IsOggi ? "Apri" : "Prenota")
+                        </button>
+                        <button class="btn-annulla-form" @onclick="() => { mostraNuovoContoExtra = false; nomeContoExtra = null; ombrelloneExtraStr = null; }">
+                            ✕
+                        </button>
+                    </div>
                 </div>
             }
 
             @if (contiExtra != null && contiExtra.Any())
             {
-                @foreach (var c in contiExtra)
-                {
-                    var totale = c.Consumazioni.Sum(x => x.Quantita * x.Prodotto.Prezzo);
-                    <div style="background: white; border-radius: 12px; padding: 14px 16px; margin-bottom: 10px; box-shadow: 0 2px 8px rgba(0,0,0,0.08); display: flex; justify-content: space-between; align-items: center;">
-                        <div>
-                            <div style="font-weight: 600;">@(string.IsNullOrWhiteSpace(c.NomeCliente) ? "Ospite" : c.NomeCliente)</div>
-                            <div style="font-size: 0.82rem; color: #6c757d; margin-top: 3px;">
-                                @c.Consumazioni.Sum(x => x.Quantita) prodotti · € @totale.ToString("0.00")
+                <div class="conti-extra-griglia">
+                    @foreach (var c in contiExtra)
+                    {
+                        var totale = c.Consumazioni.Sum(x => x.Quantita * x.Prodotto.Prezzo);
+                        <div class="conto-extra-card">
+                            <div class="conto-extra-info">
+                                <div class="conto-extra-nome">@(string.IsNullOrWhiteSpace(c.NomeCliente) ? "Ospite" : c.NomeCliente)</div>
+                                <div class="conto-extra-meta">
+                                    @c.Consumazioni.Sum(x => x.Quantita) prodotti &middot; € @totale.ToString("0.00")
+                                </div>
                             </div>
+                            <button class="btn-apri conto-extra-btn" @onclick='() => Nav.NavigateTo("/conto/" + c.Id)'>
+                                →
+                            </button>
                         </div>
-                        <button class="btn-apri" @onclick='() => Nav.NavigateTo("/conto/" + c.Id)'
-                                style="padding: 8px 18px; font-size: 0.9rem;">
-                            Gestisci →
-                        </button>
-                    </div>
-                }
+                    }
+                </div>
             }
             else if (contiExtra != null && !contiExtra.Any() && !mostraNuovoContoExtra)
             {
-                <p style="color: #adb5bd; font-size: 0.9rem; margin: 0;">Nessun conto extra aperto.</p>
+                <p class="conti-extra-vuoto">Nessun conto volante aperto.</p>
             }
         </div>
     }
@@ -163,6 +162,7 @@
     private string? errore;
     private bool mostraNuovoContoExtra;
     private string? nomeContoExtra;
+    private string? ombrelloneExtraStr;
 
     protected override async Task OnInitializedAsync() => await CaricaDati();
 
@@ -203,7 +203,6 @@
 
     private void Vai(BeachBar.Core.Entities.Ombrellone o)
     {
-        // Navigazione smart: se c'è esattamente una sessione aperta, vai direttamente al conto
         if (o.Sessioni.Count == 1)
             Nav.NavigateTo("/conto/" + o.Sessioni.First().Id);
         else
@@ -215,7 +214,11 @@
         errore = null;
         try
         {
-            var nuova = await Sessioni.ApriContoExtraAsync(nomeContoExtra, DateCtx.DataSelezionata);
+            BeachBar.Core.Entities.Sessione nuova;
+            if (int.TryParse(ombrelloneExtraStr, out var ombrId))
+                nuova = await Sessioni.ApriSessioneAsync(ombrId, nomeContoExtra, DateCtx.DataSelezionata);
+            else
+                nuova = await Sessioni.ApriContoExtraAsync(nomeContoExtra, DateCtx.DataSelezionata);
             Nav.NavigateTo("/conto/" + nuova.Id);
         }
         catch (Exception ex)
