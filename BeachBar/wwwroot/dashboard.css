@@ -40,10 +40,15 @@
     color: #888;
 }
 
+.griglia-wrapper {
+    overflow-x: auto;
+}
+
 .griglia {
     display: grid;
-    grid-template-columns: repeat(4, 1fr);
     gap: 16px;
+    width: fit-content;
+    margin: 0 auto;
 }
 
 .ombrellone {
@@ -70,11 +75,16 @@
 
 .stato {
     font-size: 0.85rem;
+}
+
+.nome-cliente {
+    font-size: 0.78rem;
     max-width: 100%;
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
-    padding: 0 4px;
+    padding: 0 6px;
+    opacity: 0.8;
 }
 
 .libero {
@@ -142,7 +152,6 @@
     }
 
     .griglia {
-        grid-template-columns: repeat(3, 1fr);
         gap: 10px;
     }
 
