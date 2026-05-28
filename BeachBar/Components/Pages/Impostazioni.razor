@@ -15,28 +15,186 @@
 
     @if (errore != null)
     {
-        <div style="background:#f8d7da; color:#721c24; border:1px solid #f5c6cb; padding:10px 14px; border-radius:8px; margin:12px 0;">
-            ⚠️ @errore
-        </div>
+        <div class="alert-errore">⚠️ @errore</div>
     }
 
     @if (sezione == "spiaggia")
     {
         <div class="sezione-card">
-            <h3>Configurazione ombrelloni</h3>
+            <h3>Dimensioni griglia</h3>
             <div class="form-riga">
-                <label>Numero ombrelloni</label>
-                <input type="number" class="input-numero" @bind="numOmbrelloni" min="1" max="100" />
+                <label>Righe</label>
+                <input type="number" class="input-numero" @bind="tempRighe" min="1" max="20" />
             </div>
             <div class="form-riga">
-                <label>Colonne nella griglia</label>
-                <input type="number" class="input-numero" @bind="numColonne" min="2" max="8" />
+                <label>Colonne</label>
+                <input type="number" class="input-numero" @bind="tempColonne" min="1" max="16" />
             </div>
-            <button class="btn-salva" @onclick="SalvaOmbrelloni">Salva configurazione</button>
+            <p class="help-dim">⚠️ Cambiare le dimensioni azzera tutte le posizioni e i bordi fuori dai nuovi limiti.</p>
+
+            @if (confermaDimensioni)
+            {
+                <div class="alert-conferma" style="margin-top:12px;">
+                    <span>Il layout attuale verrà azzerato. Continuare?</span>
+                    <button class="btn-conferma-si" @onclick="ApplicaDimensioni">Sì, ridimensiona</button>
+                    <button class="btn-conferma-no" @onclick="() => { confermaDimensioni = false; tempRighe = numRighe; tempColonne = numColonne; }">Annulla</button>
+                </div>
+            }
+            else
+            {
+                <button class="btn-salva" @onclick="ClickApplicaDimensioni">Applica dimensioni</button>
+            }
+
             @if (msgSpiaggia != null)
             {
-                <p class="msg-ok">@msgSpiaggia</p>
+                <p class="msg-ok">✓ @msgSpiaggia</p>
             }
+        </div>
+
+        <div class="sezione-card">
+            <div class="editor-header">
+                <h3 style="margin:0;">Mappa ombrelloni</h3>
+                <div class="editor-status">
+                    <span class="status-chip status-ok">@celleOccupate / @(numRighe * numColonne) celle</span>
+                    @if (!modalitaCancella && celleOccupate < numRighe * numColonne)
+                    {
+                        <span class="status-chip status-next">Prossimo: <strong>#@ProssimoNumero</strong></span>
+                    }
+                </div>
+            </div>
+
+            <div class="editor-toolbar">
+                <div class="editor-help-text">
+                    @if (modalitaCancella)
+                    {
+                        <span>🗑️ <strong>Modalità cancella:</strong> clicca su un ombrellone per rimuoverlo</span>
+                    }
+                    else
+                    {
+                        <span>Click su cella vuota = posiziona · Click destro su cella piena = rimuovi · Click sul separatore = bordo</span>
+                    }
+                </div>
+                <button class="mode-toggle @(modalitaCancella ? "mode-toggle-on" : "")"
+                        @onclick="() => modalitaCancella = !modalitaCancella"
+                        title="@(modalitaCancella ? "Disattiva modalità cancella" : "Attiva modalità cancella (utile su touch screen)")">
+                    @(modalitaCancella ? "✕ Cancella ON" : "✕ Cancella")
+                </button>
+            </div>
+
+            <div class="editor-outer">
+                @* Riga etichette colonne *@
+                <div class="editor-col-header">
+                    <div class="editor-corner-spacer"></div>
+                    @for (int c = 0; c < numColonne; c++)
+                    {
+                        <div class="editor-label-cell-col">@(c + 1)</div>
+                        @if (c < numColonne - 1) { <div class="editor-label-gap-h"></div> }
+                    }
+                </div>
+
+                @* Griglia + etichette righe *@
+                <div class="editor-main">
+                    <div class="editor-row-labels">
+                        @for (int r = 0; r < numRighe; r++)
+                        {
+                            <div class="editor-label-cell-row">@(r + 1)</div>
+                            @if (r < numRighe - 1) { <div class="editor-label-gap-v"></div> }
+                        }
+                    </div>
+
+                    <div class="editor-scroll-x">
+                        <div class="layout-editor @(modalitaCancella ? "modalita-cancella" : "")" style="@EditorGridStyle">
+                            @for (int r = 0; r < numRighe; r++)
+                            {
+                                @for (int c = 0; c < numColonne; c++)
+                                {
+                                    int idx = r * numColonne + c;
+                                    var omb = idx < celleEditor.Length ? celleEditor[idx] : null;
+
+                                    <div class="editor-cell @(omb != null ? "cell-piena" : "cell-vuota")"
+                                         @onclick="() => GestioneClickCella(idx)"
+                                         @oncontextmenu:preventDefault="true"
+                                         @oncontextmenu="() => RimuoviDaCellaEditor(idx)"
+                                         title="@(omb != null ? $"Ombrellone #{omb.Numero} · click destro per rimuovere" : "Clicca per posizionare")">
+                                        @if (omb != null)
+                                        {
+                                            <span class="cell-num">@omb.Numero</span>
+                                        }
+                                        else if (!modalitaCancella)
+                                        {
+                                            <span class="cell-hint">+</span>
+                                        }
+                                    </div>
+
+                                    @if (c < numColonne - 1)
+                                    {
+                                        int sepC = c;
+                                        bool vOn = bordiV.Contains(sepC);
+                                        <div class="editor-sep editor-sep-v @(vOn ? "sep-on" : "sep-off")"
+                                             title="@(vOn ? "Rimuovi bordo verticale" : "Aggiungi bordo verticale")"
+                                             @onclick="() => ToggleBordoV(sepC)">
+                                            <div class="sep-inner"></div>
+                                        </div>
+                                    }
+                                }
+
+                                @if (r < numRighe - 1)
+                                {
+                                    int sepR = r;
+                                    bool hOn = bordiH.Contains(sepR);
+
+                                    @for (int c = 0; c < numColonne; c++)
+                                    {
+                                        <div class="editor-sep editor-sep-h @(hOn ? "sep-on" : "sep-off")"
+                                             title="@(hOn ? "Rimuovi bordo orizzontale" : "Aggiungi bordo orizzontale")"
+                                             @onclick="() => ToggleBordoH(sepR)">
+                                            <div class="sep-inner"></div>
+                                        </div>
+
+                                        @if (c < numColonne - 1)
+                                        {
+                                            int localC = c;
+                                            bool cornerOn = bordiV.Contains(localC) && hOn;
+                                            <div class="editor-corner @(cornerOn ? "corner-on" : "")"></div>
+                                        }
+                                    }
+                                }
+                            }
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            @if (ombrelloniNonPosizionati.Count > 0)
+            {
+                <div class="pool-info">
+                    <span class="pool-count">@ombrelloniNonPosizionati.Count non posizionati</span>
+                    <span class="pool-list">
+                        (@string.Join(", ", ombrelloniNonPosizionati.Take(10).Select(o => "#" + o.Numero))@(ombrelloniNonPosizionati.Count > 10 ? "..." : ""))
+                    </span>
+                    <span class="pool-hint">Il click su cella vuota li assegna in ordine</span>
+                </div>
+            }
+
+            <div class="editor-azioni">
+                <button class="btn-azione" @onclick="PopolaSequenziale" title="Riempie tutta la griglia con ombrelloni numerati in sequenza (crea i mancanti)">
+                    ⚡ Popola griglia intera
+                </button>
+                @if (!confermaAzzeraLayout)
+                {
+                    <button class="btn-azione btn-azione-danger" @onclick="() => confermaAzzeraLayout = true">
+                        🗑️ Azzera posizioni
+                    </button>
+                }
+                else
+                {
+                    <span class="conferma-inline">
+                        Rimuovere tutti dalla griglia?
+                        <button class="btn-conferma-si" style="padding:6px 14px;" @onclick="EseguiAzzeraLayout">Sì</button>
+                        <button class="btn-conferma-no" style="padding:6px 14px;" @onclick="() => confermaAzzeraLayout = false">No</button>
+                    </span>
+                }
+            </div>
         </div>
     }
 
@@ -74,7 +232,6 @@
             }
 
             <hr />
-
             <h3>Prodotti</h3>
 
             <div class="form-nuovo-prodotto">
@@ -92,11 +249,7 @@
             <table class="tabella" style="margin-top:16px">
                 <thead>
                     <tr>
-                        <th>Nome</th>
-                        <th>Prezzo</th>
-                        <th>Categoria</th>
-                        <th>Disponibile</th>
-                        <th></th>
+                        <th>Nome</th><th>Prezzo</th><th>Categoria</th><th>Disponibile</th><th></th>
                     </tr>
                 </thead>
                 <tbody>
@@ -157,11 +310,7 @@
                     <button class="btn-conferma-no" @onclick="() => confermaResetVisivo = false">Annulla</button>
                 </div>
             }
-
-            @if (msgResetVisivo != null)
-            {
-                <p class="msg-ok">@msgResetVisivo</p>
-            }
+            @if (msgResetVisivo != null) { <p class="msg-ok">@msgResetVisivo</p> }
 
             <hr style="margin: 30px 0;" />
 
@@ -180,11 +329,7 @@
                     <button class="btn-conferma-no" @onclick="() => confermaReset = false">Annulla</button>
                 </div>
             }
-
-            @if (msgReset != null)
-            {
-                <p class="msg-ok">@msgReset</p>
-            }
+            @if (msgReset != null) { <p class="msg-ok">@msgReset</p> }
 
             <hr style="margin: 30px 0;" />
 
@@ -198,12 +343,47 @@
 @code {
     private string sezione = "spiaggia";
 
-    // Spiaggia
+    // ── Spiaggia / layout ─────────────────────────────────────────────────
+    private int numRighe = 5;
+    private int numColonne = 4;
+    private int tempRighe = 5;
+    private int tempColonne = 4;
     private int numOmbrelloni;
-    private int numColonne;
+    private HashSet<int> bordiV = new();
+    private HashSet<int> bordiH = new();
+    private BeachBar.Core.Entities.Ombrellone?[] celleEditor = Array.Empty<BeachBar.Core.Entities.Ombrellone?>();
+    private List<BeachBar.Core.Entities.Ombrellone> ombrelloniNonPosizionati = new();
+    private bool modalitaCancella;
+    private bool confermaAzzeraLayout;
+    private bool confermaDimensioni;
     private string? msgSpiaggia;
+    private int _msgVersion;
 
-    // Prodotti
+    private int celleOccupate => celleEditor.Count(c => c != null);
+    private bool LayoutHasCelle => celleEditor.Any(c => c != null);
+
+    private int ProssimoNumero =>
+        ombrelloniNonPosizionati.Count > 0
+            ? ombrelloniNonPosizionati[0].Numero
+            : (celleEditor.Any(c => c != null)
+                ? celleEditor.Where(c => c != null).Max(c => c!.Numero) + 1
+                : 1);
+
+    private string EditorGridStyle =>
+        "display:grid;" +
+        "grid-template-columns:" + string.Join(" ", Enumerable.Range(0, 2 * numColonne - 1).Select(i => i % 2 == 0 ? "64px" : "20px")) + ";" +
+        "grid-template-rows:" + string.Join(" ", Enumerable.Range(0, 2 * numRighe - 1).Select(i => i % 2 == 0 ? "52px" : "20px")) + ";" +
+        "gap:0;width:fit-content;";
+
+    private static HashSet<int> ParseBordi(string? s) =>
+        s == null
+            ? new()
+            : s.Split(',', StringSplitOptions.RemoveEmptyEntries)
+               .Where(x => int.TryParse(x, out _))
+               .Select(int.Parse)
+               .ToHashSet();
+
+    // ── Prodotti ──────────────────────────────────────────────────────────
     private List<BeachBar.Core.Entities.Prodotto> prodottiLista = new();
     private List<string> categorie = new();
     private string? categoriaInModifica;
@@ -218,22 +398,18 @@
     private string editCategoria = "";
     private bool editDisponibile;
 
-    // Gestione
+    // ── Gestione ──────────────────────────────────────────────────────────
     private bool confermaReset;
     private string? msgReset;
     private bool confermaResetVisivo;
     private string? msgResetVisivo;
-
-    // Errore generico mostrato sopra alla sezione attiva
     private string? errore;
 
     protected override async Task OnInitializedAsync()
     {
         try
         {
-            var imp = await ImpostazioniSvc.GetImpostazioniAsync();
-            numOmbrelloni = imp.NumeroOmbrelloni;
-            numColonne = imp.NumeroColonne;
+            await CaricaLayoutEditor();
             await CaricaProdotti();
         }
         catch (Exception ex)
@@ -242,35 +418,183 @@
         }
     }
 
-    // Nessun try-catch qui: le eccezioni devono propagarsi ai metodi chiamanti
-    // che hanno il proprio contesto di errore e il proprio catch block.
+    private async Task CaricaLayoutEditor()
+    {
+        var imp = await ImpostazioniSvc.GetImpostazioniAsync();
+        numOmbrelloni = imp.NumeroOmbrelloni;
+        numColonne = imp.NumeroColonne;
+        numRighe = imp.NumeroRighe;
+        tempColonne = numColonne;
+        tempRighe = numRighe;
+        bordiV = ParseBordi(imp.BordiVerticali);
+        bordiH = ParseBordi(imp.BordiOrizzontali);
+
+        var tutti = await ImpostazioniSvc.GetOmbrelloniPerEditorAsync();
+        int totCelle = numRighe * numColonne;
+        celleEditor = new BeachBar.Core.Entities.Ombrellone?[totCelle];
+        ombrelloniNonPosizionati = new();
+
+        foreach (var o in tutti)
+        {
+            if (o.CellaIndice.HasValue && o.CellaIndice.Value < totCelle)
+                celleEditor[o.CellaIndice.Value] = o;
+            else
+                ombrelloniNonPosizionati.Add(o); // include sia non posizionati che fuori bounds
+        }
+    }
+
+    private void SetMsg(string msg)
+    {
+        msgSpiaggia = msg;
+        int v = ++_msgVersion;
+        _ = ClearMsgAsync(v);
+    }
+
+    private async Task ClearMsgAsync(int version)
+    {
+        await Task.Delay(3500);
+        if (_msgVersion == version)
+        {
+            msgSpiaggia = null;
+            await InvokeAsync(StateHasChanged);
+        }
+    }
+
+    private async Task ClickApplicaDimensioni()
+    {
+        bool dimensioniCambiate = tempRighe != numRighe || tempColonne != numColonne;
+        if (dimensioniCambiate && LayoutHasCelle)
+        {
+            confermaDimensioni = true;
+        }
+        else
+        {
+            await ApplicaDimensioni();
+        }
+    }
+
+    private async Task ApplicaDimensioni()
+    {
+        errore = null;
+        confermaDimensioni = false;
+        try
+        {
+            await ImpostazioniSvc.AggiornaGrigliaAsync(tempRighe, tempColonne);
+            await CaricaLayoutEditor();
+            SetMsg($"Griglia ridimensionata a {numRighe}×{numColonne}.");
+        }
+        catch (Exception ex)
+        {
+            errore = $"Errore: {ex.Message}";
+        }
+    }
+
+    private async Task GestioneClickCella(int idx)
+    {
+        if (modalitaCancella)
+            await RimuoviDaCellaEditor(idx);
+        else
+            await ClickCellaEditor(idx);
+    }
+
+    private async Task ClickCellaEditor(int idx)
+    {
+        if (idx < celleEditor.Length && celleEditor[idx] != null) return;
+        errore = null;
+        try
+        {
+            await ImpostazioniSvc.AssegnaCellaAsync(idx);
+            await CaricaLayoutEditor();
+        }
+        catch (Exception ex)
+        {
+            errore = $"Errore: {ex.Message}";
+        }
+    }
+
+    private async Task RimuoviDaCellaEditor(int idx)
+    {
+        if (idx >= celleEditor.Length || celleEditor[idx] == null) return;
+        errore = null;
+        try
+        {
+            await ImpostazioniSvc.RimuoviDaCellaAsync(idx);
+            await CaricaLayoutEditor();
+        }
+        catch (Exception ex)
+        {
+            errore = $"Errore: {ex.Message}";
+        }
+    }
+
+    private async Task ToggleBordoV(int col)
+    {
+        errore = null;
+        try
+        {
+            if (!bordiV.Remove(col)) bordiV.Add(col);
+            await ImpostazioniSvc.AggiornaBordiAsync(bordiV, bordiH);
+        }
+        catch (Exception ex)
+        {
+            errore = $"Errore: {ex.Message}";
+            await CaricaLayoutEditor();
+        }
+    }
+
+    private async Task ToggleBordoH(int row)
+    {
+        errore = null;
+        try
+        {
+            if (!bordiH.Remove(row)) bordiH.Add(row);
+            await ImpostazioniSvc.AggiornaBordiAsync(bordiV, bordiH);
+        }
+        catch (Exception ex)
+        {
+            errore = $"Errore: {ex.Message}";
+            await CaricaLayoutEditor();
+        }
+    }
+
+    private async Task PopolaSequenziale()
+    {
+        errore = null;
+        try
+        {
+            await ImpostazioniSvc.PopolaSequenzialeAsync();
+            await CaricaLayoutEditor();
+            SetMsg($"Griglia popolata: {celleOccupate} ombrelloni posizionati.");
+        }
+        catch (Exception ex)
+        {
+            errore = $"Errore: {ex.Message}";
+        }
+    }
+
+    private async Task EseguiAzzeraLayout()
+    {
+        errore = null;
+        confermaAzzeraLayout = false;
+        try
+        {
+            await ImpostazioniSvc.AzzeraLayoutAsync();
+            await CaricaLayoutEditor();
+            SetMsg("Posizioni azzerate.");
+        }
+        catch (Exception ex)
+        {
+            errore = $"Errore: {ex.Message}";
+        }
+    }
+
     private async Task CaricaProdotti()
     {
         prodottiLista = await Prodotti.GetTuttiProdottiAsync();
         categorie = await Prodotti.GetCategorieAsync();
     }
 
-    private async Task SalvaOmbrelloni()
-    {
-        errore = null;
-        msgSpiaggia = null;
-        try
-        {
-            await ImpostazioniSvc.AggiornaOmbrelloniAsync(numOmbrelloni);
-            await ImpostazioniSvc.AggiornaColumeAsync(numColonne);
-            msgSpiaggia = "Configurazione salvata.";
-        }
-        catch (Exception ex)
-        {
-            errore = $"Errore nel salvataggio della configurazione: {ex.Message}";
-        }
-    }
-
-    private void ModificaCategoria(string cat)
-    {
-        categoriaInModifica = cat;
-        nuovoNomeCategoria = cat;
-    }
+    private void ModificaCategoria(string cat) { categoriaInModifica = cat; nuovoNomeCategoria = cat; }
 
     private async Task SalvaCategoria(string vecchia)
     {
@@ -282,11 +606,7 @@
             categoriaInModifica = null;
             await CaricaProdotti();
         }
-        catch (Exception ex)
-        {
-            categoriaInModifica = null;
-            errore = $"Errore nel rinominare la categoria: {ex.Message}";
-        }
+        catch (Exception ex) { categoriaInModifica = null; errore = $"Errore: {ex.Message}"; }
     }
 
     private void ConfermaEliminaCategoria(string cat) => confermaCancellaCategoria = cat;
@@ -300,11 +620,7 @@
             confermaCancellaCategoria = null;
             await CaricaProdotti();
         }
-        catch (Exception ex)
-        {
-            confermaCancellaCategoria = null;
-            errore = $"Errore nell'eliminazione della categoria: {ex.Message}";
-        }
+        catch (Exception ex) { confermaCancellaCategoria = null; errore = $"Errore: {ex.Message}"; }
     }
 
     private async Task AggiuntaProdotto()
@@ -318,10 +634,7 @@
             nuovoProdottoPrezzo = 0;
             await CaricaProdotti();
         }
-        catch (Exception ex)
-        {
-            errore = $"Errore nell'aggiunta del prodotto: {ex.Message}";
-        }
+        catch (Exception ex) { errore = $"Errore: {ex.Message}"; }
     }
 
     private void ModificaProdotto(BeachBar.Core.Entities.Prodotto p)
@@ -342,58 +655,37 @@
             prodottoInModifica = null;
             await CaricaProdotti();
         }
-        catch (Exception ex)
-        {
-            prodottoInModifica = null;
-            errore = $"Errore nel salvataggio del prodotto: {ex.Message}";
-        }
+        catch (Exception ex) { prodottoInModifica = null; errore = $"Errore: {ex.Message}"; }
     }
 
     private async Task EliminaProdotto(int id)
     {
         errore = null;
-        try
-        {
-            await Prodotti.EliminaProdottoAsync(id);
-            await CaricaProdotti();
-        }
-        catch (Exception ex)
-        {
-            errore = $"Errore nell'eliminazione del prodotto: {ex.Message}";
-        }
+        try { await Prodotti.EliminaProdottoAsync(id); await CaricaProdotti(); }
+        catch (Exception ex) { errore = $"Errore: {ex.Message}"; }
     }
 
     private async Task EseguiReset()
     {
         errore = null;
-        msgReset = null;
         try
         {
             await Sessioni.ResetTotaliAsync();
             confermaReset = false;
             msgReset = "Reset sessioni completato.";
         }
-        catch (Exception ex)
-        {
-            confermaReset = false;
-            errore = $"Errore durante il reset: {ex.Message}";
-        }
+        catch (Exception ex) { confermaReset = false; errore = $"Errore: {ex.Message}"; }
     }
 
     private async Task EseguiResetVisivo()
     {
         errore = null;
-        msgResetVisivo = null;
         try
         {
             await ImpostazioniSvc.ResetVisivoStatisticheAsync();
             confermaResetVisivo = false;
             msgResetVisivo = "Contatori dashboard azzerati.";
         }
-        catch (Exception ex)
-        {
-            confermaResetVisivo = false;
-            errore = $"Errore nell'azzeramento dei contatori: {ex.Message}";
-        }
+        catch (Exception ex) { confermaResetVisivo = false; errore = $"Errore: {ex.Message}"; }
     }
 }

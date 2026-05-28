@@ -1,3 +1,5 @@
+/* ─── Blazor defaults ────────────────────────── */
+
 h1:focus {
     outline: none;
 }
@@ -28,152 +30,67 @@ h1:focus {
     border-color: #929292;
 }
 
-.btn-logout-impostazioni {
-    display: inline-block;
-    padding: 12px 24px;
-    background: #f8d7da;
-    color: #721c24;
-    border-radius: 12px;
-    font-size: 1rem;
-    font-weight: 600;
-    text-decoration: none;
-    transition: background 0.2s;
-}
+/* ─── Navigatore date (Home + Storico) ───────── */
 
-.btn-logout-impostazioni:hover {
-    background: #f5c2c7;
-    color: #721c24;
-}
-
-/*Luigi*/
-
-.tabs-impostazioni {
+.date-navigator {
     display: flex;
-    gap: 10px;
-    margin-bottom: 24px;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 20px;
     flex-wrap: wrap;
 }
 
-.sezione-card {
-    background: #f8f9fa;
-    border-radius: 20px;
-    padding: 24px;
-}
-
-.form-riga {
-    display: flex;
-    align-items: center;
-    gap: 16px;
-    margin-bottom: 16px;
-}
-
-    .form-riga label {
-        width: 200px;
-        font-weight: bold;
-    }
-
-.input-numero {
-    padding: 10px;
-    font-size: 1rem;
-    border: 2px solid #ccc;
-    border-radius: 10px;
-    width: 100px;
-}
-
-.input-testo {
-    padding: 10px;
-    font-size: 1rem;
-    border: 2px solid #ccc;
-    border-radius: 10px;
-    flex: 1;
-}
-
-.input-select {
-    padding: 10px;
-    font-size: 1rem;
-    border: 2px solid #ccc;
-    border-radius: 10px;
-}
-
-.input-inline {
-    padding: 6px 10px;
-    font-size: 0.9rem;
-    border: 2px solid #ccc;
+.btn-nav-data {
+    background: #e9ecef;
+    border: none;
     border-radius: 8px;
-    width: 100%;
+    padding: 8px 14px;
+    cursor: pointer;
+    font-size: 1rem;
+    flex-shrink: 0;
+    line-height: 1;
 }
 
-.btn-salva {
-    padding: 12px 24px;
-    background: #007bff;
+.btn-nav-data:hover {
+    background: #dee2e6;
+}
+
+.input-data {
+    border: 1px solid #ced4da;
+    border-radius: 8px;
+    padding: 8px 12px;
+    font-size: 0.95rem;
+    cursor: pointer;
+    background: white;
+    flex: 1;
+    min-width: 130px;
+}
+
+.btn-oggi {
+    background: #0d6efd;
     color: white;
     border: none;
-    border-radius: 12px;
-    font-size: 1rem;
-    cursor: pointer;
-    margin-top: 8px;
-}
-
-.msg-ok {
-    color: #28a745;
-    font-weight: bold;
-    margin-top: 12px;
-}
-
-.lista-categorie {
-    display: flex;
-    flex-direction: column;
-    gap: 10px;
-    margin-bottom: 16px;
-}
-
-.riga-categoria {
-    display: flex;
-    align-items: center;
-    gap: 10px;
-    padding: 10px;
-    background: white;
-    border-radius: 10px;
-}
-
-.cat-nome {
-    flex: 1;
-    font-weight: bold;
-}
-
-.btn-sm {
-    padding: 6px 12px;
-    border: none;
     border-radius: 8px;
+    padding: 8px 14px;
     cursor: pointer;
-    font-size: 0.9rem;
+    font-size: 0.85rem;
+    font-weight: 600;
+    flex-shrink: 0;
 }
 
-.btn-modifica {
-    background: #e7f3ff;
-    color: #007bff;
+.btn-oggi:hover {
+    background: #0b5ed7;
 }
 
-.btn-elimina {
+/* ─── Feedback visivo globale ────────────────── */
+
+.alert-errore {
     background: #f8d7da;
     color: #721c24;
-}
-
-.btn-ok {
-    background: #d4edda;
-    color: #155724;
-}
-
-.btn-annulla {
-    background: #f8f9fa;
-    color: #555;
-}
-
-.form-nuovo-prodotto {
-    display: flex;
-    gap: 10px;
-    align-items: center;
-    flex-wrap: wrap;
+    border: 1px solid #f5c6cb;
+    padding: 10px 14px;
+    border-radius: 8px;
+    margin: 12px 0;
 }
 
 .alert-conferma {
@@ -205,40 +122,75 @@ h1:focus {
     cursor: pointer;
 }
 
+.caricamento {
+    color: #adb5bd;
+    font-size: 0.95rem;
+    text-align: center;
+    padding: 24px 0;
+    margin: 0;
+}
+
+/* ─── Empty state (usato da Home e Scontrini) ── */
+
+.empty-state {
+    text-align: center;
+    padding: 52px 20px;
+    color: #adb5bd;
+    margin-bottom: 8px;
+}
+
+.empty-state-icon {
+    font-size: 3rem;
+    margin-bottom: 10px;
+    line-height: 1;
+}
+
+.empty-state-testo {
+    font-size: 1rem;
+    margin: 0 0 18px;
+}
+
+.empty-state-link {
+    display: inline-block;
+    background: #0d6efd;
+    color: white;
+    text-decoration: none;
+    border-radius: 10px;
+    padding: 10px 20px;
+    font-size: 0.9rem;
+    font-weight: 600;
+}
+
+.empty-state-link:hover {
+    background: #0b5ed7;
+    color: white;
+}
+
+/* ─── Componenti riusabili ───────────────────── */
+
+.titolo {
+    font-size: 1.5rem;
+    font-weight: 700;
+    color: #2d3436;
+    margin: 0 0 24px;
+}
+
+.sezione-card {
+    background: white;
+    border-radius: 20px;
+    padding: 24px;
+    box-shadow: 0 1px 4px rgba(0,0,0,0.06);
+    margin-bottom: 16px;
+}
+
+/* ─── Mobile ─────────────────────────────────── */
+
 @media (max-width: 600px) {
-    /* Impostazioni: label sopra il campo invece che affiancata */
-    .form-riga {
-        flex-direction: column;
-        align-items: flex-start;
+    .date-navigator {
         gap: 6px;
     }
 
-    .form-riga label {
-        width: auto;
-    }
-
-    /* Tabella prodotti: scorrimento orizzontale */
-    .sezione-card .tabella {
-        display: block;
-        overflow-x: auto;
-        -webkit-overflow-scrolling: touch;
-        white-space: nowrap;
-    }
-
-    /* Aggiungi prodotto: campi impilati */
-    .form-nuovo-prodotto {
-        flex-direction: column;
-        align-items: stretch;
-    }
-
-    .form-nuovo-prodotto .input-testo,
-    .form-nuovo-prodotto .input-numero,
-    .form-nuovo-prodotto .input-select {
-        width: 100%;
-    }
-
-    .btn-logout-impostazioni {
-        display: block;
-        text-align: center;
+    .input-data {
+        min-width: 0;
     }
 }

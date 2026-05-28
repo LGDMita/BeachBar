@@ -15,4 +15,27 @@ public interface IImpostazioniService
 
     /// <summary>Aggiorna la data di reset visivo per azzerare i contatori della dashboard.</summary>
     Task ResetVisivoStatisticheAsync();
+
+    // ── Layout personalizzato ──────────────────────────────────────────────
+
+    /// <summary>Cambia dimensioni griglia. Se cambiano, azzera tutte le posizioni (CellaIndice).</summary>
+    Task AggiornaGrigliaAsync(int righe, int colonne);
+
+    /// <summary>Salva i bordi verticali (dopo colonna c) e orizzontali (dopo riga r).</summary>
+    Task AggiornaBordiAsync(IEnumerable<int> bordiV, IEnumerable<int> bordiH);
+
+    /// <summary>Restituisce tutti gli ombrelloni ordinati per Numero (include CellaIndice).</summary>
+    Task<List<Ombrellone>> GetOmbrelloniPerEditorAsync();
+
+    /// <summary>Assegna il prossimo ombrellone non posizionato alla cella; se non ne esistono, ne crea uno nuovo.</summary>
+    Task AssegnaCellaAsync(int cellaIndice);
+
+    /// <summary>Rimuove l'ombrellone dalla cella (CellaIndice → null).</summary>
+    Task RimuoviDaCellaAsync(int cellaIndice);
+
+    /// <summary>Assegna posizioni sequenziali (sin→destra, riga per riga) a tutti gli ombrelloni non posizionati.</summary>
+    Task PopolaSequenzialeAsync();
+
+    /// <summary>Azzera CellaIndice di tutti gli ombrelloni.</summary>
+    Task AzzeraLayoutAsync();
 }

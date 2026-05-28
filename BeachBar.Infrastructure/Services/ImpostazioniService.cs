@@ -10,14 +10,19 @@ public class ImpostazioniService : IImpostazioniService
 
     public ImpostazioniService(BeachBarDbContext db) => _db = db;
 
-    // FirstAsync lancerebbe InvalidOperationException con messaggio generico se il record manca.
-    // Questo helper usa FirstOrDefaultAsync e produce un errore leggibile che indica il problema reale.
     private async Task<ImpostazioniSpiaggia> GetConfigAsync()
     {
         return await _db.ImpostazioniSpiaggia.FirstOrDefaultAsync(i => i.Id == 1)
             ?? throw new InvalidOperationException(
                 "Configurazione spiaggia non trovata (Id=1). Verificare il seed del database.");
     }
+
+    private static IEnumerable<int> ParseBordiInternal(string? s) =>
+        s == null
+            ? Enumerable.Empty<int>()
+            : s.Split(',', StringSplitOptions.RemoveEmptyEntries)
+               .Where(x => int.TryParse(x, out _))
+               .Select(int.Parse);
 
     public async Task<ImpostazioniSpiaggia> GetImpostazioniAsync()
         => await GetConfigAsync();
@@ -58,7 +63,6 @@ public class ImpostazioniService : IImpostazioniService
             .SelectMany(s => s.Consumazioni)
             .SumAsync(c => (decimal?)c.Quantita * c.Prodotto.Prezzo) ?? 0;
 
-        // Per il giorno corrente si applica il filtro di reset visivo, per gli altri giorni si mostra il totale completo.
         var oggi = DateOnly.FromDateTime(DateTime.UtcNow);
         IQueryable<Sessione> chiuseQuery = _db.Sessioni.Where(s => s.Chiusa && s.DataRiferimento == data);
         if (data == oggi)
@@ -82,6 +86,110 @@ public class ImpostazioniService : IImpostazioniService
     {
         var imp = await GetConfigAsync();
         imp.UltimoResetStatistiche = DateTime.UtcNow;
+        await _db.SaveChangesAsync();
+    }
+
+    // ── Layout personalizzato ──────────────────────────────────────────────
+
+    public async Task AggiornaGrigliaAsync(int righe, int colonne)
+    {
+        var imp = await GetConfigAsync();
+        bool cambiate = imp.NumeroRighe != righe || imp.NumeroColonne != colonne;
+
+        if (cambiate)
+        {
+            // Azzera tutte le posizioni
+            var tutti = await _db.Ombrelloni.ToListAsync();
+            foreach (var o in tutti) o.CellaIndice = null;
+
+            // Rimuovi bordi fuori dai limiti della nuova griglia
+            var v = ParseBordiInternal(imp.BordiVerticali).Where(c => c < colonne - 1).ToList();
+            var h = ParseBordiInternal(imp.BordiOrizzontali).Where(r => r < righe - 1).ToList();
+            imp.BordiVerticali = v.Count > 0 ? string.Join(",", v) : null;
+            imp.BordiOrizzontali = h.Count > 0 ? string.Join(",", h) : null;
+        }
+
+        imp.NumeroRighe = righe;
+        imp.NumeroColonne = colonne;
+        await _db.SaveChangesAsync();
+    }
+
+    public async Task AggiornaBordiAsync(IEnumerable<int> bordiV, IEnumerable<int> bordiH)
+    {
+        var imp = await GetConfigAsync();
+        var v = bordiV.OrderBy(x => x).ToList();
+        var h = bordiH.OrderBy(x => x).ToList();
+        imp.BordiVerticali = v.Count > 0 ? string.Join(",", v) : null;
+        imp.BordiOrizzontali = h.Count > 0 ? string.Join(",", h) : null;
+        await _db.SaveChangesAsync();
+    }
+
+    public async Task<List<Ombrellone>> GetOmbrelloniPerEditorAsync()
+        => await _db.Ombrelloni.AsNoTracking().OrderBy(o => o.Numero).ToListAsync();
+
+    public async Task AssegnaCellaAsync(int cellaIndice)
+    {
+        // Controllo server-side: la cella potrebbe già essere occupata (race condition)
+        if (await _db.Ombrelloni.AnyAsync(o => o.CellaIndice == cellaIndice))
+            return;
+
+        var omb = await _db.Ombrelloni
+            .Where(o => o.CellaIndice == null)
+            .OrderBy(o => o.Numero)
+            .FirstOrDefaultAsync();
+
+        if (omb == null)
+        {
+            var maxNum = await _db.Ombrelloni.MaxAsync(o => (int?)o.Numero) ?? 0;
+            omb = new Ombrellone { Numero = maxNum + 1, Occupato = false };
+            _db.Ombrelloni.Add(omb);
+        }
+
+        omb.CellaIndice = cellaIndice;
+        await _db.SaveChangesAsync();
+    }
+
+    public async Task RimuoviDaCellaAsync(int cellaIndice)
+    {
+        var omb = await _db.Ombrelloni.FirstOrDefaultAsync(o => o.CellaIndice == cellaIndice);
+        if (omb != null)
+        {
+            omb.CellaIndice = null;
+            await _db.SaveChangesAsync();
+        }
+    }
+
+    public async Task PopolaSequenzialeAsync()
+    {
+        var imp = await GetConfigAsync();
+        int totCelle = imp.NumeroRighe * imp.NumeroColonne;
+
+        var ombrelloni = await _db.Ombrelloni.OrderBy(o => o.Numero).ToListAsync();
+
+        // Azzera tutte le posizioni correnti
+        foreach (var o in ombrelloni) o.CellaIndice = null;
+
+        // Crea gli ombrelloni mancanti per riempire tutta la griglia
+        int maxNum = ombrelloni.Count > 0 ? ombrelloni.Max(o => o.Numero) : 0;
+        while (ombrelloni.Count < totCelle)
+        {
+            var nuovo = new Ombrellone { Numero = ++maxNum, Occupato = false };
+            _db.Ombrelloni.Add(nuovo);
+            ombrelloni.Add(nuovo);
+        }
+
+        // Assegna posizioni sequenziali
+        for (int i = 0; i < totCelle; i++)
+            ombrelloni[i].CellaIndice = i;
+
+        imp.NumeroOmbrelloni = totCelle;
+        await _db.SaveChangesAsync();
+    }
+
+    public async Task AzzeraLayoutAsync()
+    {
+        var ombrelloni = await _db.Ombrelloni.ToListAsync();
+        foreach (var o in ombrelloni) o.CellaIndice = null;
         await _db.SaveChangesAsync();
     }
 }

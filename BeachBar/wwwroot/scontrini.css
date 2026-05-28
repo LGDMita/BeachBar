@@ -1,0 +1,247 @@
+.scontrini-container {
+    padding: 20px;
+    max-width: 760px;
+    margin: 0 auto;
+}
+
+/* ─── Header ─────────────────────────────────── */
+
+.scontrini-header {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 12px;
+    margin-bottom: 20px;
+    flex-wrap: wrap;
+}
+
+.scontrini-summary {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 0.88rem;
+    color: #6c757d;
+    flex-wrap: wrap;
+}
+
+.s-count {
+    font-size: 1rem;
+    font-weight: 700;
+    color: #2d3436;
+}
+
+.s-total {
+    font-weight: 700;
+    color: #0d6efd;
+}
+
+/* ─── Toolbar ────────────────────────────────── */
+
+.scontrini-toolbar {
+    display: flex;
+    gap: 10px;
+    margin-bottom: 16px;
+    align-items: center;
+    flex-wrap: wrap;
+}
+
+.scontrini-search {
+    flex: 1;
+    min-width: 180px;
+    padding: 10px 14px;
+    border: 1.5px solid #e5e7eb;
+    border-radius: 10px;
+    font-size: 0.95rem;
+    background: white;
+    outline: none;
+}
+
+.scontrini-search:focus {
+    border-color: #0d6efd;
+}
+
+.filtro-chips {
+    display: flex;
+    gap: 6px;
+}
+
+.chip {
+    padding: 8px 14px;
+    border: 1.5px solid #e5e7eb;
+    border-radius: 20px;
+    background: white;
+    font-size: 0.85rem;
+    cursor: pointer;
+    font-weight: 500;
+    transition: all 0.12s;
+    white-space: nowrap;
+}
+
+.chip:hover {
+    border-color: #0d6efd;
+    color: #0d6efd;
+}
+
+.chip-on {
+    background: #0d6efd;
+    border-color: #0d6efd;
+    color: white;
+}
+
+.sort-toggle {
+    display: flex;
+    border: 1.5px solid #e5e7eb;
+    border-radius: 10px;
+    overflow: hidden;
+    flex-shrink: 0;
+}
+
+.sort-btn {
+    padding: 8px 12px;
+    background: white;
+    border: none;
+    font-size: 0.82rem;
+    cursor: pointer;
+    font-weight: 500;
+    color: #6c757d;
+    transition: all 0.12s;
+    white-space: nowrap;
+}
+
+.sort-btn + .sort-btn {
+    border-left: 1.5px solid #e5e7eb;
+}
+
+.sort-btn:hover {
+    background: #f8f9fa;
+    color: #2d3436;
+}
+
+.sort-on {
+    background: #f1f5ff;
+    color: #0d6efd;
+    font-weight: 600;
+}
+
+/* ─── Lista sessioni ─────────────────────────── */
+
+.scontrini-lista {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.sessione-row {
+    background: white;
+    border-radius: 14px;
+    padding: 14px 16px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    cursor: pointer;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.06);
+    transition: box-shadow 0.12s, transform 0.08s;
+    border: none;
+    width: 100%;
+    text-align: left;
+}
+
+.sessione-row:hover {
+    box-shadow: 0 4px 14px rgba(0,0,0,0.09);
+    transform: translateY(-1px);
+}
+
+.sessione-row:active {
+    transform: scale(0.995);
+}
+
+.sessione-badge {
+    padding: 5px 10px;
+    border-radius: 8px;
+    font-size: 0.78rem;
+    font-weight: 700;
+    white-space: nowrap;
+    flex-shrink: 0;
+    min-width: 56px;
+    text-align: center;
+}
+
+.badge-ombrellone {
+    background: #dbeafe;
+    color: #1d4ed8;
+}
+
+.badge-volante {
+    background: #f3e8ff;
+    color: #7c3aed;
+}
+
+.sessione-info {
+    flex: 1;
+    min-width: 0;
+}
+
+.sessione-nome {
+    font-weight: 600;
+    font-size: 0.97rem;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    color: #1e293b;
+}
+
+.sessione-meta {
+    font-size: 0.79rem;
+    color: #9ca3af;
+    margin-top: 2px;
+}
+
+.sessione-importo {
+    font-size: 1rem;
+    font-weight: 700;
+    color: #1e293b;
+    flex-shrink: 0;
+    min-width: 64px;
+    text-align: right;
+}
+
+.importo-zero {
+    color: #9ca3af;
+    font-weight: 400;
+}
+
+.sessione-arrow {
+    color: #cbd5e1;
+    font-size: 1.4rem;
+    line-height: 1;
+    flex-shrink: 0;
+}
+
+.scontrini-nessun-risultato {
+    color: #9ca3af;
+    font-size: 0.9rem;
+    text-align: center;
+    padding: 24px 0;
+}
+
+/* ─── Mobile ─────────────────────────────────── */
+
+@media (max-width: 600px) {
+    .scontrini-container {
+        padding: 12px;
+    }
+
+    .scontrini-search {
+        min-width: 100%;
+    }
+
+    .sessione-badge {
+        min-width: 46px;
+        font-size: 0.72rem;
+        padding: 4px 8px;
+    }
+
+    .sessione-importo {
+        min-width: 52px;
+    }
+}

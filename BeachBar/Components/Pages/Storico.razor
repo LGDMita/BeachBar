@@ -6,41 +6,27 @@
 @inject NavigationManager Nav
 @inject IJSRuntime JS
 
-<link rel="stylesheet" href="css/storico.css" />
-
 <div class="storico-container">
     <div class="header-storico">
         <h1 class="titolo-storico">Archivio Storico</h1>
     </div>
 
-    <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 16px;">
-        <button @onclick="GiornoPrec"
-                style="background: #e9ecef; border: none; border-radius: 8px; padding: 8px 14px; cursor: pointer; font-size: 1rem;">
-            ◀
-        </button>
-        <input type="date"
+    <div class="date-navigator">
+        <button class="btn-nav-data" @onclick="GiornoPrec">◀</button>
+        <input type="date" class="input-data"
                value="@DateCtx.DataSelezionata.ToString("yyyy-MM-dd")"
-               @onchange="OnDataChanged"
-               style="border: 1px solid #ced4da; border-radius: 8px; padding: 8px 12px; font-size: 0.95rem; cursor: pointer;" />
-        <button @onclick="GiornoSucc"
-                style="background: #e9ecef; border: none; border-radius: 8px; padding: 8px 14px; cursor: pointer; font-size: 1rem;">
-            ▶
-        </button>
+               @onchange="OnDataChanged" />
+        <button class="btn-nav-data" @onclick="GiornoSucc">▶</button>
         @if (!DateCtx.IsOggi)
         {
-            <button @onclick="TornaOggi"
-                    style="background: #0d6efd; color: white; border: none; border-radius: 8px; padding: 8px 14px; cursor: pointer; font-size: 0.85rem;">
-                Oggi
-            </button>
+            <button class="btn-oggi" @onclick="TornaOggi">Oggi</button>
         }
     </div>
 
     <div class="storico-card">
         @if (errore != null)
         {
-            <div style="background:#f8d7da; color:#721c24; border:1px solid #f5c6cb; padding:10px 14px; border-radius:8px; margin-bottom:12px;">
-                ⚠️ @errore
-            </div>
+            <div class="alert-errore">⚠️ @errore</div>
         }
         else if (sessioni == null)
         {

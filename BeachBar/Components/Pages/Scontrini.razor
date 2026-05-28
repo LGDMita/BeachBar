@@ -1,0 +1,156 @@
+@page "/scontrini"
+@attribute [Authorize]
+@using BeachBar.Core.Entities
+@inject BeachBar.Infrastructure.Services.ISessioniService Sessioni
+@inject NavigationManager Nav
+
+<div class="scontrini-container">
+    <div class="scontrini-header">
+        <h1 class="titolo">Scontrini aperti</h1>
+        @if (tutte != null && tutte.Any())
+        {
+            <div class="scontrini-summary">
+                <span class="s-count">@tutte.Count</span>
+                <span>@(tutte.Count == 1 ? "aperto" : "aperti")</span>
+                @if (totaleAperto > 0)
+                {
+                    <span>·</span>
+                    <span class="s-total">€ @totaleAperto.ToString("0.00")</span>
+                    <span>in corso</span>
+                }
+            </div>
+        }
+    </div>
+
+    @if (tutte != null && tutte.Any())
+    {
+        <div class="scontrini-toolbar">
+            <input class="scontrini-search"
+                   type="search"
+                   placeholder="Cerca nome o ombrellone..."
+                   @bind-value="ricerca"
+                   @bind-value:event="oninput" />
+            <div class="filtro-chips">
+                <button class="chip @(filtro == "tutti" ? "chip-on" : "")" @onclick='() => filtro = "tutti"'>Tutti</button>
+                <button class="chip @(filtro == "ombrelloni" ? "chip-on" : "")" @onclick='() => filtro = "ombrelloni"'>Ombrelloni</button>
+                <button class="chip @(filtro == "volanti" ? "chip-on" : "")" @onclick='() => filtro = "volanti"'>Volanti</button>
+            </div>
+            <div class="sort-toggle">
+                <button class="sort-btn @(ordinamento == "tempo" ? "sort-on" : "")"
+                        title="Ordina per orario di apertura"
+                        @onclick='() => ordinamento = "tempo"'>⏱ Orario</button>
+                <button class="sort-btn @(ordinamento == "importo" ? "sort-on" : "")"
+                        title="Ordina per importo decrescente"
+                        @onclick='() => ordinamento = "importo"'>€ Importo</button>
+            </div>
+        </div>
+    }
+
+    @if (errore != null)
+    {
+        <div class="alert-errore">⚠️ @errore</div>
+    }
+    else if (tutte == null)
+    {
+        <p class="caricamento">Caricamento...</p>
+    }
+    else if (!tutte.Any())
+    {
+        <div class="empty-state">
+            <div class="empty-state-icon">✅</div>
+            <p class="empty-state-testo">Nessuno scontrino aperto.</p>
+        </div>
+    }
+    else
+    {
+        var filtrate = SessioniFiltrate.ToList();
+        if (!filtrate.Any())
+        {
+            <p class="scontrini-nessun-risultato">Nessun risultato per "@ricerca".</p>
+        }
+        else
+        {
+            <div class="scontrini-lista">
+                @foreach (var s in filtrate)
+                {
+                    var totale = s.Consumazioni.Sum(c => c.Quantita * c.Prodotto.Prezzo);
+                    var nProdotti = s.Consumazioni.Sum(c => c.Quantita);
+                    var ora = s.Apertura.ToLocalTime().ToString("HH:mm");
+
+                    <button class="sessione-row" @onclick='() => Nav.NavigateTo("/conto/" + s.Id)'>
+                        @if (s.OmbrelloneId.HasValue)
+                        {
+                            <span class="sessione-badge badge-ombrellone">#@(s.Ombrellone?.Numero)</span>
+                        }
+                        else
+                        {
+                            <span class="sessione-badge badge-volante">Volante</span>
+                        }
+                        <div class="sessione-info">
+                            <div class="sessione-nome">
+                                @(string.IsNullOrWhiteSpace(s.NomeCliente) ? "Ospite" : s.NomeCliente)
+                            </div>
+                            <div class="sessione-meta">
+                                ore @ora ·
+                                @if (nProdotti > 0)
+                                {
+                                    <span>@nProdotti @(nProdotti == 1 ? "prodotto" : "prodotti")</span>
+                                }
+                                else
+                                {
+                                    <span>nessun prodotto</span>
+                                }
+                            </div>
+                        </div>
+                        <div class="sessione-importo @(totale == 0 ? "importo-zero" : "")">
+                            @(totale > 0 ? $"€ {totale:0.00}" : "—")
+                        </div>
+                        <span class="sessione-arrow">›</span>
+                    </button>
+                }
+            </div>
+        }
+    }
+</div>
+
+@code {
+    private List<Sessione>? tutte;
+    private string ricerca = "";
+    private string filtro = "tutti";
+    private string ordinamento = "tempo";
+    private string? errore;
+
+    private decimal totaleAperto =>
+        tutte?.Sum(s => s.Consumazioni.Sum(c => c.Quantita * c.Prodotto.Prezzo)) ?? 0;
+
+    private IEnumerable<Sessione> SessioniFiltrate
+    {
+        get
+        {
+            var q = (tutte ?? Enumerable.Empty<Sessione>())
+                .Where(s =>
+                    (filtro == "tutti" ||
+                     (filtro == "ombrelloni" && s.OmbrelloneId.HasValue) ||
+                     (filtro == "volanti" && !s.OmbrelloneId.HasValue)) &&
+                    (string.IsNullOrWhiteSpace(ricerca) ||
+                     (s.NomeCliente?.Contains(ricerca, StringComparison.OrdinalIgnoreCase) ?? false) ||
+                     (s.Ombrellone?.Numero.ToString().Contains(ricerca) ?? false)));
+
+            return ordinamento == "importo"
+                ? q.OrderByDescending(s => s.Consumazioni.Sum(c => c.Quantita * c.Prodotto.Prezzo))
+                : q.OrderBy(s => s.Apertura);
+        }
+    }
+
+    protected override async Task OnInitializedAsync()
+    {
+        try
+        {
+            tutte = await Sessioni.GetSessioniAperteAsync();
+        }
+        catch (Exception ex)
+        {
+            errore = $"Impossibile caricare gli scontrini: {ex.Message}";
+        }
+    }
+}

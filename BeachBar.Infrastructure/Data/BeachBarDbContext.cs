@@ -157,7 +157,8 @@ public class BeachBarDbContext : DbContext
             {
                 Id = 1,
                 NumeroOmbrelloni = 20,
-                NumeroColonne = 4
+                NumeroColonne = 4,
+                NumeroRighe = 5
             }
         );
     }

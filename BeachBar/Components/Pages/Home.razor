@@ -7,25 +7,15 @@
 
 <div class="dashboard">
 
-    <div class="date-navigator" style="display: flex; align-items: center; gap: 8px; margin-bottom: 20px;">
-        <button @onclick="GiornoPrec"
-                style="background: #e9ecef; border: none; border-radius: 8px; padding: 8px 14px; cursor: pointer; font-size: 1rem;">
-            ◀
-        </button>
-        <input type="date"
+    <div class="date-navigator">
+        <button class="btn-nav-data" @onclick="GiornoPrec">◀</button>
+        <input type="date" class="input-data"
                value="@DateCtx.DataSelezionata.ToString("yyyy-MM-dd")"
-               @onchange="OnDataChanged"
-               style="border: 1px solid #ced4da; border-radius: 8px; padding: 8px 12px; font-size: 0.95rem; cursor: pointer;" />
-        <button @onclick="GiornoSucc"
-                style="background: #e9ecef; border: none; border-radius: 8px; padding: 8px 14px; cursor: pointer; font-size: 1rem;">
-            ▶
-        </button>
+               @onchange="OnDataChanged" />
+        <button class="btn-nav-data" @onclick="GiornoSucc">▶</button>
         @if (!DateCtx.IsOggi)
         {
-            <button @onclick="TornaOggi"
-                    style="background: #0d6efd; color: white; border: none; border-radius: 8px; padding: 8px 14px; cursor: pointer; font-size: 0.85rem;">
-                Oggi
-            </button>
+            <button class="btn-oggi" @onclick="TornaOggi">Oggi</button>
         }
     </div>
 
@@ -46,16 +36,94 @@
 
     @if (errore != null)
     {
-        <div style="background:#f8d7da; color:#721c24; border:1px solid #f5c6cb; padding:10px 14px; border-radius:8px; margin-bottom:12px;">
-            ⚠️ @errore
-        </div>
+        <div class="alert-errore">⚠️ @errore</div>
     }
     else if (ombrelloni == null)
     {
-        <p>Caricamento...</p>
+        <p class="caricamento">Caricamento...</p>
+    }
+    else if (!ombrelloni.Any())
+    {
+        <div class="empty-state">
+            <div class="empty-state-icon">🏖️</div>
+            <p class="empty-state-testo">Nessun ombrellone configurato.</p>
+            <a href="/impostazioni" class="empty-state-link">Vai alle Impostazioni →</a>
+        </div>
+    }
+    else if (usaGrigliaRighe)
+    {
+        @* Layout per righe: usato sia con posizioni custom sia solo con bordi configurati *@
+        <div class="griglia-wrapper">
+            <div class="griglia-custom">
+                @for (int r = 0; r < numRighe; r++)
+                {
+                    <div class="griglia-riga-custom">
+                        @for (int c = 0; c < numColonne; c++)
+                        {
+                            int idx = r * numColonne + c;
+                            var omb = idx < celleGrid.Length ? celleGrid[idx] : null;
+
+                            @if (omb != null)
+                            {
+                                <button class="ombrellone @(omb.Occupato ? "occupato" : "libero")"
+                                        @onclick="() => Vai(omb)">
+                                    <span class="numero">@omb.Numero</span>
+                                    @if (omb.Occupato)
+                                    {
+                                        @if (omb.Sessioni.Count == 1)
+                                        {
+                                            var nome = omb.Sessioni.First().NomeCliente;
+                                            <span class="stato">Occupato</span>
+                                            @if (!string.IsNullOrWhiteSpace(nome))
+                                            {
+                                                <span class="omb-nome">@nome</span>
+                                            }
+                                        }
+                                        else
+                                        {
+                                            <span class="stato">@omb.Sessioni.Count conti</span>
+                                        }
+                                    }
+                                    else
+                                    {
+                                        <span class="stato">Libero</span>
+                                    }
+                                </button>
+                            }
+                            else
+                            {
+                                <div class="ombrellone-placeholder"></div>
+                            }
+
+                            @if (c < numColonne - 1)
+                            {
+                                bool vOn = bordiV.Contains(c);
+                                <div class="griglia-sep-v @(vOn ? "sep-attivo" : "")"></div>
+                            }
+                        }
+                    </div>
+
+                    @if (r < numRighe - 1)
+                    {
+                        bool hOn = bordiH.Contains(r);
+                        <div class="griglia-sep-h-row @(hOn ? "sep-attivo" : "")">
+                            @for (int c = 0; c < numColonne; c++)
+                            {
+                                <div class="griglia-sep-h-seg"></div>
+                                @if (c < numColonne - 1)
+                                {
+                                    <div class="griglia-sep-corner"></div>
+                                }
+                            }
+                        </div>
+                    }
+                }
+            </div>
+        </div>
     }
     else
     {
+        @* Layout sequenziale classico (nessun bordo, nessuna posizione custom) *@
         <div class="griglia-wrapper">
             <div class="griglia" style="grid-template-columns: repeat(@colonne, 120px);">
                 @foreach (var o in ombrelloni)
@@ -71,7 +139,7 @@
                                 <span class="stato">Occupato</span>
                                 @if (!string.IsNullOrWhiteSpace(nome))
                                 {
-                                    <span class="nome-cliente">@nome</span>
+                                    <span class="omb-nome">@nome</span>
                                 }
                             }
                             else
@@ -87,69 +155,86 @@
                 }
             </div>
         </div>
+    }
 
-        <div class="conti-extra-section">
-            <div class="conti-extra-header">
-                <div>
-                    <h3 class="conti-extra-titolo">Conti volanti</h3>
-                    <span class="conti-extra-subtitle">Clienti senza postazione fissa</span>
-                </div>
-                @if (!mostraNuovoContoExtra)
-                {
-                    <button class="btn-nuovo-conto" @onclick="() => mostraNuovoContoExtra = true">
-                        + Nuovo
-                    </button>
-                }
-            </div>
-
-            @if (mostraNuovoContoExtra)
-            {
-                <div class="nuovoconto-form">
-                    <input class="input-nome nuovoconto-input" placeholder="Nome cliente (opzionale)" @bind="nomeContoExtra" />
-                    <select class="nuovoconto-select" @bind="ombrelloneExtraStr">
-                        <option value="">Nessun ombrellone</option>
-                        @foreach (var o in ombrelloni)
-                        {
-                            <option value="@o.Id">Ombrellone @o.Numero</option>
-                        }
-                    </select>
-                    <div class="nuovoconto-azioni">
-                        <button class="btn-apri" @onclick="ApriContoExtra">
-                            @(DateCtx.IsOggi ? "Apri" : "Prenota")
-                        </button>
-                        <button class="btn-annulla-form" @onclick="() => { mostraNuovoContoExtra = false; nomeContoExtra = null; ombrelloneExtraStr = null; }">
-                            ✕
-                        </button>
-                    </div>
-                </div>
-            }
-
-            @if (contiExtra != null && contiExtra.Any())
-            {
-                <div class="conti-extra-griglia">
-                    @foreach (var c in contiExtra)
-                    {
-                        var totale = c.Consumazioni.Sum(x => x.Quantita * x.Prodotto.Prezzo);
-                        <div class="conto-extra-card">
-                            <div class="conto-extra-info">
-                                <div class="conto-extra-nome">@(string.IsNullOrWhiteSpace(c.NomeCliente) ? "Ospite" : c.NomeCliente)</div>
-                                <div class="conto-extra-meta">
-                                    @c.Consumazioni.Sum(x => x.Quantita) prodotti &middot; € @totale.ToString("0.00")
-                                </div>
-                            </div>
-                            <button class="btn-apri conto-extra-btn" @onclick='() => Nav.NavigateTo("/conto/" + c.Id)'>
-                                →
-                            </button>
-                        </div>
-                    }
-                </div>
-            }
-            else if (contiExtra != null && !contiExtra.Any() && !mostraNuovoContoExtra)
-            {
-                <p class="conti-extra-vuoto">Nessun conto volante aperto.</p>
-            }
+    @if (ombrelloniNonInGriglia.Count > 0)
+    {
+        <div class="avviso-griglia-parziale">
+            <span>
+                @ombrelloniNonInGriglia.Count
+                @(ombrelloniNonInGriglia.Count == 1 ? "ombrellone non visibile" : "ombrelloni non visibili")
+                nella griglia
+                (@string.Join(", ", ombrelloniNonInGriglia.Take(5).Select(o => "#" + o.Numero))@(ombrelloniNonInGriglia.Count > 5 ? "..." : ""))
+            </span>
+            <a href="/impostazioni">Posiziona nella mappa →</a>
         </div>
     }
+
+    <div class="conti-extra-section">
+        <div class="conti-extra-header">
+            <div>
+                <h3 class="conti-extra-titolo">Conti volanti</h3>
+                <span class="conti-extra-subtitle">Clienti senza postazione fissa</span>
+            </div>
+            @if (!mostraNuovoContoExtra)
+            {
+                <button class="btn-nuovo-conto" @onclick="() => mostraNuovoContoExtra = true">
+                    + Nuovo
+                </button>
+            }
+        </div>
+
+        @if (mostraNuovoContoExtra)
+        {
+            var ombrelloniSelectList = usaLayoutCustom
+                ? (ombrelloni ?? new()).Where(o => o.CellaIndice.HasValue).OrderBy(o => o.Numero).ToList()
+                : (ombrelloni ?? new());
+
+            <div class="nuovoconto-form">
+                <input class="input-nome nuovoconto-input" placeholder="Nome cliente (opzionale)" @bind="nomeContoExtra" />
+                <select class="nuovoconto-select" @bind="ombrelloneExtraStr">
+                    <option value="">Nessun ombrellone</option>
+                    @foreach (var o in ombrelloniSelectList)
+                    {
+                        <option value="@o.Id">Ombrellone @o.Numero</option>
+                    }
+                </select>
+                <div class="nuovoconto-azioni">
+                    <button class="btn-apri" @onclick="ApriContoExtra">
+                        @(DateCtx.IsOggi ? "Apri" : "Prenota")
+                    </button>
+                    <button class="btn-annulla-form" @onclick="() => { mostraNuovoContoExtra = false; nomeContoExtra = null; ombrelloneExtraStr = null; }">
+                        ✕
+                    </button>
+                </div>
+            </div>
+        }
+
+        @if (contiExtra != null && contiExtra.Any())
+        {
+            <div class="conti-extra-griglia">
+                @foreach (var c in contiExtra)
+                {
+                    var totale = c.Consumazioni.Sum(x => x.Quantita * x.Prodotto.Prezzo);
+                    <div class="conto-extra-card">
+                        <div class="conto-extra-info">
+                            <div class="conto-extra-nome">@(string.IsNullOrWhiteSpace(c.NomeCliente) ? "Ospite" : c.NomeCliente)</div>
+                            <div class="conto-extra-meta">
+                                @c.Consumazioni.Sum(x => x.Quantita) prodotti &middot; € @totale.ToString("0.00")
+                            </div>
+                        </div>
+                        <button class="btn-apri conto-extra-btn" @onclick='() => Nav.NavigateTo("/conto/" + c.Id)'>
+                            →
+                        </button>
+                    </div>
+                }
+            </div>
+        }
+        else if (contiExtra != null && !contiExtra.Any() && !mostraNuovoContoExtra)
+        {
+            <p class="conti-extra-vuoto">Nessun conto volante aperto.</p>
+        }
+    </div>
 </div>
 
 @code {
@@ -159,10 +244,27 @@
     private decimal incassato;
     private int ombrelloniAttivi;
     private int colonne = 4;
+    private int numRighe = 5;
+    private int numColonne = 4;
+    private bool usaLayoutCustom;
+    private bool usaGrigliaRighe;
+    private BeachBar.Core.Entities.Ombrellone?[] celleGrid = Array.Empty<BeachBar.Core.Entities.Ombrellone?>();
+    private HashSet<int> bordiV = new();
+    private HashSet<int> bordiH = new();
     private string? errore;
     private bool mostraNuovoContoExtra;
     private string? nomeContoExtra;
     private string? ombrelloneExtraStr;
+
+    private List<BeachBar.Core.Entities.Ombrellone> ombrelloniNonInGriglia = new();
+
+    private static HashSet<int> ParseBordi(string? s) =>
+        s == null
+            ? new()
+            : s.Split(',', StringSplitOptions.RemoveEmptyEntries)
+               .Where(x => int.TryParse(x, out _))
+               .Select(int.Parse)
+               .ToHashSet();
 
     protected override async Task OnInitializedAsync() => await CaricaDati();
 
@@ -181,6 +283,42 @@
             ombrelloniAttivi = stats.ombrelloniAttivi;
             var imp = await Impostazioni.GetImpostazioniAsync();
             colonne = imp.NumeroColonne;
+            numColonne = imp.NumeroColonne;
+            numRighe = imp.NumeroRighe;
+            bordiV = ParseBordi(imp.BordiVerticali);
+            bordiH = ParseBordi(imp.BordiOrizzontali);
+
+            usaLayoutCustom = ombrelloni.Any(o => o.CellaIndice.HasValue);
+            bool hasBordi = bordiV.Count > 0 || bordiH.Count > 0;
+            usaGrigliaRighe = usaLayoutCustom || hasBordi;
+
+            if (usaLayoutCustom)
+            {
+                // Posizionamento esplicito: usa CellaIndice per costruire la griglia
+                celleGrid = new BeachBar.Core.Entities.Ombrellone?[numRighe * numColonne];
+                foreach (var o in ombrelloni.Where(o => o.CellaIndice.HasValue))
+                {
+                    int ci = o.CellaIndice!.Value;
+                    if (ci < celleGrid.Length) celleGrid[ci] = o;
+                }
+                ombrelloniNonInGriglia = ombrelloni.Where(o => !o.CellaIndice.HasValue).ToList();
+            }
+            else
+            {
+                ombrelloniNonInGriglia = new();
+            }
+
+            if (!usaLayoutCustom && hasBordi)
+            {
+                // Nessuna posizione custom, ma ci sono bordi: rendering per righe con layout sequenziale
+                int righeCalcolate = numColonne > 0
+                    ? (ombrelloni.Count + numColonne - 1) / numColonne
+                    : 1;
+                numRighe = righeCalcolate;
+                celleGrid = new BeachBar.Core.Entities.Ombrellone?[numRighe * numColonne];
+                for (int i = 0; i < ombrelloni.Count && i < celleGrid.Length; i++)
+                    celleGrid[i] = ombrelloni[i];
+            }
         }
         catch (Exception ex)
         {
