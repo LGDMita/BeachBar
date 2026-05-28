@@ -12,8 +12,8 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace BeachBar.Infrastructure.Migrations
 {
     [DbContext(typeof(BeachBarDbContext))]
-    [Migration("20260526220923_NullableOmbrelloneId")]
-    partial class NullableOmbrelloneId
+    [Migration("20260528210308_InitialCreate")]
+    partial class InitialCreate
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
@@ -32,6 +32,9 @@ namespace BeachBar.Infrastructure.Migrations
                         .HasColumnType("integer");
 
                     NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
+
+                    b.Property<DateOnly>("Giorno")
+                        .HasColumnType("date");
 
                     b.Property<int>("ProdottoId")
                         .HasColumnType("integer");
@@ -62,10 +65,19 @@ namespace BeachBar.Infrastructure.Migrations
 
                     NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
 
+                    b.Property<string>("BordiOrizzontali")
+                        .HasColumnType("text");
+
+                    b.Property<string>("BordiVerticali")
+                        .HasColumnType("text");
+
                     b.Property<int>("NumeroColonne")
                         .HasColumnType("integer");
 
                     b.Property<int>("NumeroOmbrelloni")
+                        .HasColumnType("integer");
+
+                    b.Property<int>("NumeroRighe")
                         .HasColumnType("integer");
 
                     b.Property<DateTime?>("UltimoResetStatistiche")
@@ -79,8 +91,10 @@ namespace BeachBar.Infrastructure.Migrations
                         new
                         {
                             Id = 1,
-                            NumeroColonne = 4,
-                            NumeroOmbrelloni = 20
+                            BordiVerticali = "9,15",
+                            NumeroColonne = 17,
+                            NumeroOmbrelloni = 77,
+                            NumeroRighe = 5
                         });
                 });
 
@@ -91,6 +105,9 @@ namespace BeachBar.Infrastructure.Migrations
                         .HasColumnType("integer");
 
                     NpgsqlPropertyBuilderExtensions.UseIdentityByDefaultColumn(b.Property<int>("Id"));
+
+                    b.Property<int?>("CellaIndice")
+                        .HasColumnType("integer");
 
                     b.Property<int>("Numero")
                         .HasColumnType("integer");
@@ -106,121 +123,546 @@ namespace BeachBar.Infrastructure.Migrations
                         new
                         {
                             Id = 1,
+                            CellaIndice = 69,
                             Numero = 1,
                             Occupato = false
                         },
                         new
                         {
                             Id = 2,
+                            CellaIndice = 70,
                             Numero = 2,
                             Occupato = false
                         },
                         new
                         {
                             Id = 3,
+                            CellaIndice = 71,
                             Numero = 3,
                             Occupato = false
                         },
                         new
                         {
                             Id = 4,
+                            CellaIndice = 72,
                             Numero = 4,
                             Occupato = false
                         },
                         new
                         {
                             Id = 5,
+                            CellaIndice = 73,
                             Numero = 5,
                             Occupato = false
                         },
                         new
                         {
                             Id = 6,
+                            CellaIndice = 74,
                             Numero = 6,
                             Occupato = false
                         },
                         new
                         {
                             Id = 7,
+                            CellaIndice = 75,
                             Numero = 7,
                             Occupato = false
                         },
                         new
                         {
                             Id = 8,
+                            CellaIndice = 76,
                             Numero = 8,
                             Occupato = false
                         },
                         new
                         {
                             Id = 9,
+                            CellaIndice = 77,
                             Numero = 9,
                             Occupato = false
                         },
                         new
                         {
                             Id = 10,
+                            CellaIndice = 78,
                             Numero = 10,
                             Occupato = false
                         },
                         new
                         {
                             Id = 11,
+                            CellaIndice = 79,
                             Numero = 11,
                             Occupato = false
                         },
                         new
                         {
                             Id = 12,
+                            CellaIndice = 80,
                             Numero = 12,
                             Occupato = false
                         },
                         new
                         {
                             Id = 13,
+                            CellaIndice = 81,
                             Numero = 13,
                             Occupato = false
                         },
                         new
                         {
                             Id = 14,
+                            CellaIndice = 82,
                             Numero = 14,
                             Occupato = false
                         },
                         new
                         {
                             Id = 15,
+                            CellaIndice = 83,
                             Numero = 15,
                             Occupato = false
                         },
                         new
                         {
                             Id = 16,
+                            CellaIndice = 51,
                             Numero = 16,
                             Occupato = false
                         },
                         new
                         {
                             Id = 17,
+                            CellaIndice = 52,
                             Numero = 17,
                             Occupato = false
                         },
                         new
                         {
                             Id = 18,
+                            CellaIndice = 53,
                             Numero = 18,
                             Occupato = false
                         },
                         new
                         {
                             Id = 19,
+                            CellaIndice = 54,
                             Numero = 19,
                             Occupato = false
                         },
                         new
                         {
                             Id = 20,
+                            CellaIndice = 55,
                             Numero = 20,
+                            Occupato = false
+                        },
+                        new
+                        {
+                            Id = 21,
+                            CellaIndice = 56,
+                            Numero = 21,
+                            Occupato = false
+                        },
+                        new
+                        {
+                            Id = 22,
+                            CellaIndice = 57,
+                            Numero = 22,
+                            Occupato = false
+                        },
+                        new
+                        {
+                            Id = 23,
+                            CellaIndice = 58,
+                            Numero = 23,
+                            Occupato = false
+                        },
+                        new
+                        {
+                            Id = 24,
+                            CellaIndice = 59,
+                            Numero = 24,
+                            Occupato = false
+                        },
+                        new
+                        {
+                            Id = 25,
+                            CellaIndice = 60,
+                            Numero = 25,
+                            Occupato = false
+                        },
+                        new
+                        {
+                            Id = 26,
+                            CellaIndice = 61,
+                            Numero = 26,
+                            Occupato = false
+                        },
+                        new
+                        {
+                            Id = 27,
+                            CellaIndice = 62,
+                            Numero = 27,
+                            Occupato = false
+                        },
+                        new
+                        {
+                            Id = 28,
+                            CellaIndice = 63,
+                            Numero = 28,
+                            Occupato = false
+                        },
+                        new
+                        {
+                            Id = 29,
+                            CellaIndice = 64,
+                            Numero = 29,
+                            Occupato = false
+                        },
+                        new
+                        {
+                            Id = 30,
+                            CellaIndice = 65,
+                            Numero = 30,
+                            Occupato = false
+                        },
+                        new
+                        {
+                            Id = 31,
+                            CellaIndice = 66,
+                            Numero = 31,
+                            Occupato = false
+                        },
+                        new
+                        {
+                            Id = 32,
+                            CellaIndice = 67,
+                            Numero = 32,
+                            Occupato = false
+                        },
+                        new
+                        {
+                            Id = 33,
+                            CellaIndice = 34,
+                            Numero = 33,
+                            Occupato = false
+                        },
+                        new
+                        {
+                            Id = 34,
+                            CellaIndice = 35,
+                            Numero = 34,
+                            Occupato = false
+                        },
+                        new
+                        {
+                            Id = 35,
+                            CellaIndice = 36,
+                            Numero = 35,
+                            Occupato = false
+                        },
+                        new
+                        {
+                            Id = 36,
+                            CellaIndice = 37,
+                            Numero = 36,
+                            Occupato = false
+                        },
+                        new
+                        {
+                            Id = 37,
+                            CellaIndice = 38,
+                            Numero = 37,
+                            Occupato = false
+                        },
+                        new
+                        {
+                            Id = 38,
+                            CellaIndice = 39,
+                            Numero = 38,
+                            Occupato = false
+                        },
+                        new
+                        {
+                            Id = 39,
+                            CellaIndice = 40,
+                            Numero = 39,
+                            Occupato = false
+                        },
+                        new
+                        {
+                            Id = 40,
+                            CellaIndice = 41,
+                            Numero = 40,
+                            Occupato = false
+                        },
+                        new
+                        {
+                            Id = 41,
+                            CellaIndice = 42,
+                            Numero = 41,
+                            Occupato = false
+                        },
+                        new
+                        {
+                            Id = 42,
+                            CellaIndice = 43,
+                            Numero = 42,
+                            Occupato = false
+                        },
+                        new
+                        {
+                            Id = 43,
+                            CellaIndice = 44,
+                            Numero = 43,
+                            Occupato = false
+                        },
+                        new
+                        {
+                            Id = 44,
+                            CellaIndice = 45,
+                            Numero = 44,
+                            Occupato = false
+                        },
+                        new
+                        {
+                            Id = 45,
+                            CellaIndice = 46,
+                            Numero = 45,
+                            Occupato = false
+                        },
+                        new
+                        {
+                            Id = 46,
+                            CellaIndice = 47,
+                            Numero = 46,
+                            Occupato = false
+                        },
+                        new
+                        {
+                            Id = 47,
+                            CellaIndice = 48,
+                            Numero = 47,
+                            Occupato = false
+                        },
+                        new
+                        {
+                            Id = 48,
+                            CellaIndice = 49,
+                            Numero = 48,
+                            Occupato = false
+                        },
+                        new
+                        {
+                            Id = 49,
+                            CellaIndice = 50,
+                            Numero = 49,
+                            Occupato = false
+                        },
+                        new
+                        {
+                            Id = 50,
+                            CellaIndice = 17,
+                            Numero = 50,
+                            Occupato = false
+                        },
+                        new
+                        {
+                            Id = 51,
+                            CellaIndice = 18,
+                            Numero = 51,
+                            Occupato = false
+                        },
+                        new
+                        {
+                            Id = 52,
+                            CellaIndice = 19,
+                            Numero = 52,
+                            Occupato = false
+                        },
+                        new
+                        {
+                            Id = 53,
+                            CellaIndice = 20,
+                            Numero = 53,
+                            Occupato = false
+                        },
+                        new
+                        {
+                            Id = 54,
+                            CellaIndice = 21,
+                            Numero = 54,
+                            Occupato = false
+                        },
+                        new
+                        {
+                            Id = 55,
+                            CellaIndice = 22,
+                            Numero = 55,
+                            Occupato = false
+                        },
+                        new
+                        {
+                            Id = 56,
+                            CellaIndice = 23,
+                            Numero = 56,
+                            Occupato = false
+                        },
+                        new
+                        {
+                            Id = 57,
+                            CellaIndice = 24,
+                            Numero = 57,
+                            Occupato = false
+                        },
+                        new
+                        {
+                            Id = 58,
+                            CellaIndice = 25,
+                            Numero = 58,
+                            Occupato = false
+                        },
+                        new
+                        {
+                            Id = 59,
+                            CellaIndice = 26,
+                            Numero = 59,
+                            Occupato = false
+                        },
+                        new
+                        {
+                            Id = 60,
+                            CellaIndice = 27,
+                            Numero = 60,
+                            Occupato = false
+                        },
+                        new
+                        {
+                            Id = 61,
+                            CellaIndice = 28,
+                            Numero = 61,
+                            Occupato = false
+                        },
+                        new
+                        {
+                            Id = 62,
+                            CellaIndice = 29,
+                            Numero = 62,
+                            Occupato = false
+                        },
+                        new
+                        {
+                            Id = 63,
+                            CellaIndice = 30,
+                            Numero = 63,
+                            Occupato = false
+                        },
+                        new
+                        {
+                            Id = 64,
+                            CellaIndice = 31,
+                            Numero = 64,
+                            Occupato = false
+                        },
+                        new
+                        {
+                            Id = 65,
+                            CellaIndice = 32,
+                            Numero = 65,
+                            Occupato = false
+                        },
+                        new
+                        {
+                            Id = 66,
+                            CellaIndice = 33,
+                            Numero = 66,
+                            Occupato = false
+                        },
+                        new
+                        {
+                            Id = 67,
+                            CellaIndice = 0,
+                            Numero = 67,
+                            Occupato = false
+                        },
+                        new
+                        {
+                            Id = 68,
+                            CellaIndice = 1,
+                            Numero = 68,
+                            Occupato = false
+                        },
+                        new
+                        {
+                            Id = 69,
+                            CellaIndice = 2,
+                            Numero = 69,
+                            Occupato = false
+                        },
+                        new
+                        {
+                            Id = 70,
+                            CellaIndice = 3,
+                            Numero = 70,
+                            Occupato = false
+                        },
+                        new
+                        {
+                            Id = 71,
+                            CellaIndice = 4,
+                            Numero = 71,
+                            Occupato = false
+                        },
+                        new
+                        {
+                            Id = 72,
+                            CellaIndice = 11,
+                            Numero = 72,
+                            Occupato = false
+                        },
+                        new
+                        {
+                            Id = 73,
+                            CellaIndice = 12,
+                            Numero = 73,
+                            Occupato = false
+                        },
+                        new
+                        {
+                            Id = 74,
+                            CellaIndice = 13,
+                            Numero = 74,
+                            Occupato = false
+                        },
+                        new
+                        {
+                            Id = 75,
+                            CellaIndice = 14,
+                            Numero = 75,
+                            Occupato = false
+                        },
+                        new
+                        {
+                            Id = 76,
+                            CellaIndice = 15,
+                            Numero = 76,
+                            Occupato = false
+                        },
+                        new
+                        {
+                            Id = 77,
+                            CellaIndice = 16,
+                            Numero = 77,
+                            Occupato = false
+                        },
+                        new
+                        {
+                            Id = 78,
+                            Numero = 78,
                             Occupato = false
                         });
                 });
@@ -1054,6 +1496,9 @@ namespace BeachBar.Infrastructure.Migrations
 
                     b.Property<DateTime?>("Chiusura")
                         .HasColumnType("timestamp with time zone");
+
+                    b.Property<DateOnly?>("DataFine")
+                        .HasColumnType("date");
 
                     b.Property<DateOnly?>("DataRiferimento")
                         .HasColumnType("date");

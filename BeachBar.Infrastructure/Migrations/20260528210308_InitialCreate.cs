@@ -22,6 +22,9 @@ namespace BeachBar.Infrastructure.Migrations
                         .Annotation("Npgsql:ValueGenerationStrategy", NpgsqlValueGenerationStrategy.IdentityByDefaultColumn),
                     NumeroOmbrelloni = table.Column<int>(type: "integer", nullable: false),
                     NumeroColonne = table.Column<int>(type: "integer", nullable: false),
+                    NumeroRighe = table.Column<int>(type: "integer", nullable: false),
+                    BordiVerticali = table.Column<string>(type: "text", nullable: true),
+                    BordiOrizzontali = table.Column<string>(type: "text", nullable: true),
                     UltimoResetStatistiche = table.Column<DateTime>(type: "timestamp with time zone", nullable: true)
                 },
                 constraints: table =>
@@ -36,7 +39,8 @@ namespace BeachBar.Infrastructure.Migrations
                     Id = table.Column<int>(type: "integer", nullable: false)
                         .Annotation("Npgsql:ValueGenerationStrategy", NpgsqlValueGenerationStrategy.IdentityByDefaultColumn),
                     Numero = table.Column<int>(type: "integer", nullable: false),
-                    Occupato = table.Column<bool>(type: "boolean", nullable: false)
+                    Occupato = table.Column<bool>(type: "boolean", nullable: false),
+                    CellaIndice = table.Column<int>(type: "integer", nullable: true)
                 },
                 constraints: table =>
                 {
@@ -65,11 +69,13 @@ namespace BeachBar.Infrastructure.Migrations
                 {
                     Id = table.Column<int>(type: "integer", nullable: false)
                         .Annotation("Npgsql:ValueGenerationStrategy", NpgsqlValueGenerationStrategy.IdentityByDefaultColumn),
-                    OmbrelloneId = table.Column<int>(type: "integer", nullable: false),
+                    OmbrelloneId = table.Column<int>(type: "integer", nullable: true),
                     NomeCliente = table.Column<string>(type: "text", nullable: true),
                     Apertura = table.Column<DateTime>(type: "timestamp with time zone", nullable: false),
                     Chiusura = table.Column<DateTime>(type: "timestamp with time zone", nullable: true),
-                    Chiusa = table.Column<bool>(type: "boolean", nullable: false)
+                    Chiusa = table.Column<bool>(type: "boolean", nullable: false),
+                    DataRiferimento = table.Column<DateOnly>(type: "date", nullable: true),
+                    DataFine = table.Column<DateOnly>(type: "date", nullable: true)
                 },
                 constraints: table =>
                 {
@@ -78,8 +84,7 @@ namespace BeachBar.Infrastructure.Migrations
                         name: "FK_Sessioni_Ombrelloni_OmbrelloneId",
                         column: x => x.OmbrelloneId,
                         principalTable: "Ombrelloni",
-                        principalColumn: "Id",
-                        onDelete: ReferentialAction.Cascade);
+                        principalColumn: "Id");
                 });
 
             migrationBuilder.CreateTable(
@@ -91,7 +96,8 @@ namespace BeachBar.Infrastructure.Migrations
                     SessioneId = table.Column<int>(type: "integer", nullable: false),
                     ProdottoId = table.Column<int>(type: "integer", nullable: false),
                     Quantita = table.Column<int>(type: "integer", nullable: false),
-                    Timestamp = table.Column<DateTime>(type: "timestamp with time zone", nullable: false)
+                    Timestamp = table.Column<DateTime>(type: "timestamp with time zone", nullable: false),
+                    Giorno = table.Column<DateOnly>(type: "date", nullable: false)
                 },
                 constraints: table =>
                 {
@@ -112,34 +118,92 @@ namespace BeachBar.Infrastructure.Migrations
 
             migrationBuilder.InsertData(
                 table: "ImpostazioniSpiaggia",
-                columns: new[] { "Id", "NumeroColonne", "NumeroOmbrelloni", "UltimoResetStatistiche" },
-                values: new object[] { 1, 4, 20, null });
+                columns: new[] { "Id", "BordiOrizzontali", "BordiVerticali", "NumeroColonne", "NumeroOmbrelloni", "NumeroRighe", "UltimoResetStatistiche" },
+                values: new object[] { 1, null, "9,15", 17, 77, 5, null });
 
             migrationBuilder.InsertData(
                 table: "Ombrelloni",
-                columns: new[] { "Id", "Numero", "Occupato" },
+                columns: new[] { "Id", "CellaIndice", "Numero", "Occupato" },
                 values: new object[,]
                 {
-                    { 1, 1, false },
-                    { 2, 2, false },
-                    { 3, 3, false },
-                    { 4, 4, false },
-                    { 5, 5, false },
-                    { 6, 6, false },
-                    { 7, 7, false },
-                    { 8, 8, false },
-                    { 9, 9, false },
-                    { 10, 10, false },
-                    { 11, 11, false },
-                    { 12, 12, false },
-                    { 13, 13, false },
-                    { 14, 14, false },
-                    { 15, 15, false },
-                    { 16, 16, false },
-                    { 17, 17, false },
-                    { 18, 18, false },
-                    { 19, 19, false },
-                    { 20, 20, false }
+                    { 1, 69, 1, false },
+                    { 2, 70, 2, false },
+                    { 3, 71, 3, false },
+                    { 4, 72, 4, false },
+                    { 5, 73, 5, false },
+                    { 6, 74, 6, false },
+                    { 7, 75, 7, false },
+                    { 8, 76, 8, false },
+                    { 9, 77, 9, false },
+                    { 10, 78, 10, false },
+                    { 11, 79, 11, false },
+                    { 12, 80, 12, false },
+                    { 13, 81, 13, false },
+                    { 14, 82, 14, false },
+                    { 15, 83, 15, false },
+                    { 16, 51, 16, false },
+                    { 17, 52, 17, false },
+                    { 18, 53, 18, false },
+                    { 19, 54, 19, false },
+                    { 20, 55, 20, false },
+                    { 21, 56, 21, false },
+                    { 22, 57, 22, false },
+                    { 23, 58, 23, false },
+                    { 24, 59, 24, false },
+                    { 25, 60, 25, false },
+                    { 26, 61, 26, false },
+                    { 27, 62, 27, false },
+                    { 28, 63, 28, false },
+                    { 29, 64, 29, false },
+                    { 30, 65, 30, false },
+                    { 31, 66, 31, false },
+                    { 32, 67, 32, false },
+                    { 33, 34, 33, false },
+                    { 34, 35, 34, false },
+                    { 35, 36, 35, false },
+                    { 36, 37, 36, false },
+                    { 37, 38, 37, false },
+                    { 38, 39, 38, false },
+                    { 39, 40, 39, false },
+                    { 40, 41, 40, false },
+                    { 41, 42, 41, false },
+                    { 42, 43, 42, false },
+                    { 43, 44, 43, false },
+                    { 44, 45, 44, false },
+                    { 45, 46, 45, false },
+                    { 46, 47, 46, false },
+                    { 47, 48, 47, false },
+                    { 48, 49, 48, false },
+                    { 49, 50, 49, false },
+                    { 50, 17, 50, false },
+                    { 51, 18, 51, false },
+                    { 52, 19, 52, false },
+                    { 53, 20, 53, false },
+                    { 54, 21, 54, false },
+                    { 55, 22, 55, false },
+                    { 56, 23, 56, false },
+                    { 57, 24, 57, false },
+                    { 58, 25, 58, false },
+                    { 59, 26, 59, false },
+                    { 60, 27, 60, false },
+                    { 61, 28, 61, false },
+                    { 62, 29, 62, false },
+                    { 63, 30, 63, false },
+                    { 64, 31, 64, false },
+                    { 65, 32, 65, false },
+                    { 66, 33, 66, false },
+                    { 67, 0, 67, false },
+                    { 68, 1, 68, false },
+                    { 69, 2, 69, false },
+                    { 70, 3, 70, false },
+                    { 71, 4, 71, false },
+                    { 72, 11, 72, false },
+                    { 73, 12, 73, false },
+                    { 74, 13, 74, false },
+                    { 75, 14, 75, false },
+                    { 76, 15, 76, false },
+                    { 77, 16, 77, false },
+                    { 78, null, 78, false }
                 });
 
             migrationBuilder.InsertData(

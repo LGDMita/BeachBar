@@ -211,9 +211,10 @@
 
     @if (sezione == "prodotti")
     {
+        @* ── Gestione categorie ── *@
         <div class="sezione-card">
-            <p class="sezione-desc">Gestisci il menu del bar. I prodotti appaiono suddivisi per categoria quando lo staff aggiunge consumazioni a un conto. Solo i prodotti segnati come <strong>disponibili</strong> compaiono nella selezione operativa.</p>
             <h3>Categorie</h3>
+            <p class="sezione-desc">Rinomina o elimina le categorie. Eliminare una categoria rimuove anche tutti i prodotti al suo interno.</p>
             <div class="lista-categorie">
                 @foreach (var cat in categorie)
                 {
@@ -233,7 +234,6 @@
                     </div>
                 }
             </div>
-
             @if (confermaCancellaCategoria != null)
             {
                 <div class="alert-conferma">
@@ -242,68 +242,118 @@
                     <button class="btn-conferma-no" @onclick="() => confermaCancellaCategoria = null">Annulla</button>
                 </div>
             }
+        </div>
 
-            <hr />
-            <h3>Prodotti</h3>
-
+        @* ── Aggiungi nuovo prodotto ── *@
+        <div class="sezione-card aggiungi-prodotto-card">
+            <h3>Aggiungi prodotto</h3>
             <div class="form-nuovo-prodotto">
-                <input class="input-testo" placeholder="Nome prodotto" @bind="nuovoProdottoNome" />
-                <div class="input-prezzo-wrapper">
-                    <label class="input-prezzo-label">€ Prezzo</label>
-                    <input type="number" class="input-numero" placeholder="0.00" @bind="nuovoProdottoPrezzo" step="0.01" min="0" />
+                <div class="campo-prodotto campo-prodotto-nome">
+                    <label class="campo-label">Nome</label>
+                    <input class="input-testo" placeholder="es. Birra Media" @bind="nuovoProdottoNome" />
                 </div>
-                <select class="input-select" @bind="nuovoProdottoCategoria">
-                    @foreach (var cat in categorie)
-                    {
-                        <option value="@cat">@cat</option>
-                    }
-                </select>
-                <button class="btn-salva" @onclick="AggiuntaProdotto">+ Aggiungi</button>
+                <div class="campo-prodotto">
+                    <label class="campo-label">Prezzo (€)</label>
+                    <div class="input-con-prefisso">
+                        <span class="input-prefisso">€</span>
+                        <input type="number" class="input-numero" placeholder="0.00" @bind="nuovoProdottoPrezzo" step="0.01" min="0" />
+                    </div>
+                </div>
+                <div class="campo-prodotto">
+                    <label class="campo-label">Categoria</label>
+                    <select class="input-select" @bind="nuovoProdottoCategoria">
+                        @foreach (var cat in categorie)
+                        {
+                            <option value="@cat">@cat</option>
+                        }
+                    </select>
+                </div>
+                <div class="campo-prodotto campo-prodotto-azione">
+                    <label class="campo-label">&nbsp;</label>
+                    <button class="btn-salva" style="margin-top:0;" @onclick="AggiuntaProdotto">+ Aggiungi</button>
+                </div>
+            </div>
+        </div>
+
+        @* ── Lista prodotti per categoria ── *@
+        <div class="sezione-card">
+            <div class="prodotti-toolbar">
+                <input class="prodotti-search"
+                       type="search"
+                       placeholder="Cerca prodotto per nome..."
+                       @bind-value="prodottoFiltro"
+                       @bind-value:event="oninput" />
+                <span class="prodotti-count">@ProdottiVisibili.Count() prodotti</span>
+            </div>
+            <div class="prodotti-filtri">
+                <button class="chip @(filtroCat == "" ? "chip-on" : "")" @onclick='() => filtroCat = ""'>Tutte</button>
+                @foreach (var cat in categorie)
+                {
+                    <button class="chip @(filtroCat == cat ? "chip-on" : "")" @onclick='() => filtroCat = cat'>@cat</button>
+                }
             </div>
 
-            <table class="tabella" style="margin-top:16px">
-                <thead>
-                    <tr>
-                        <th>Nome</th><th>Prezzo</th><th>Categoria</th><th>Disponibile</th><th></th>
-                    </tr>
-                </thead>
-                <tbody>
-                    @foreach (var p in prodottiLista)
-                    {
-                        <tr>
+            @foreach (var cat in CategorieVisibili)
+            {
+                var prodCat = ProdottiVisibili.Where(p => p.Categoria == cat).ToList();
+                if (!prodCat.Any()) continue;
+
+                <div class="prodotti-cat-sezione">
+                    <div class="prodotti-cat-header">
+                        <span class="prodotti-cat-titolo">@cat</span>
+                        <span class="prodotti-cat-count">@prodCat.Count</span>
+                    </div>
+                    <div class="prodotti-griglia">
+                        @foreach (var p in prodCat)
+                        {
                             @if (prodottoInModifica == p.Id)
                             {
-                                <td><input class="input-inline" @bind="editNome" /></td>
-                                <td><input type="number" class="input-inline" @bind="editPrezzo" step="0.50" /></td>
-                                <td>
-                                    <select class="input-inline" @bind="editCategoria">
-                                        @foreach (var cat in categorie)
-                                        {
-                                            <option value="@cat">@cat</option>
-                                        }
-                                    </select>
-                                </td>
-                                <td><input type="checkbox" @bind="editDisponibile" /></td>
-                                <td>
-                                    <button class="btn-sm btn-ok" @onclick="() => SalvaProdotto(p.Id)">✓</button>
-                                    <button class="btn-sm btn-annulla" @onclick="() => prodottoInModifica = null">✕</button>
-                                </td>
+                                <div class="prodotto-card prodotto-card-edit">
+                                    <input class="input-inline" @bind="editNome" placeholder="Nome" />
+                                    <div class="prodotto-edit-row">
+                                        <div class="input-con-prefisso" style="flex:0 0 90px;">
+                                            <span class="input-prefisso">€</span>
+                                            <input type="number" class="input-inline" @bind="editPrezzo" step="0.01" style="padding-left:22px;" />
+                                        </div>
+                                        <select class="input-inline" @bind="editCategoria" style="flex:1;">
+                                            @foreach (var c in categorie)
+                                            {
+                                                <option value="@c">@c</option>
+                                            }
+                                        </select>
+                                    </div>
+                                    <label class="prodotto-disp-check">
+                                        <input type="checkbox" @bind="editDisponibile" />
+                                        <span>Disponibile</span>
+                                    </label>
+                                    <div class="prodotto-card-azioni">
+                                        <button class="btn-sm btn-ok" @onclick="() => SalvaProdotto(p.Id)">✓ Salva</button>
+                                        <button class="btn-sm btn-annulla" @onclick="() => prodottoInModifica = null">✕</button>
+                                    </div>
+                                </div>
                             }
                             else
                             {
-                                <td>@p.Nome</td>
-                                <td>€ @p.Prezzo.ToString("0.00")</td>
-                                <td>@p.Categoria</td>
-                                <td>@(p.Disponibile ? "✓" : "—")</td>
-                                <td>
-                                    <button class="btn-sm btn-modifica" @onclick="() => ModificaProdotto(p)">✏️</button>
-                                    <button class="btn-sm btn-elimina" @onclick="() => EliminaProdotto(p.Id)">🗑️</button>
-                                </td>
+                                <div class="prodotto-card @(p.Disponibile ? "" : "prodotto-non-disp")">
+                                    <div class="prodotto-header">
+                                        <span class="prodotto-nome">@p.Nome</span>
+                                        <span class="prodotto-prezzo-badge">€ @p.Prezzo.ToString("0.00")</span>
+                                    </div>
+                                    <div class="prodotto-meta">
+                                        <span class="@(p.Disponibile ? "prodotto-disp-si" : "prodotto-disp-no")">
+                                            @(p.Disponibile ? "disponibile" : "non disp.")
+                                        </span>
+                                    </div>
+                                    <div class="prodotto-card-azioni">
+                                        <button class="btn-sm btn-modifica" @onclick="() => ModificaProdotto(p)">✏️</button>
+                                        <button class="btn-sm btn-elimina" @onclick="() => EliminaProdotto(p.Id)">🗑️</button>
+                                    </div>
+                                </div>
                             }
-                        </tr>
-                    }
-                </tbody>
-            </table>
+                        }
+                    </div>
+                </div>
+            }
         </div>
     }
 
@@ -402,6 +452,8 @@
     // ── Prodotti ──────────────────────────────────────────────────────────
     private List<BeachBar.Core.Entities.Prodotto> prodottiLista = new();
     private List<string> categorie = new();
+    private string prodottoFiltro = "";
+    private string filtroCat = "";
     private string? categoriaInModifica;
     private string? nuovoNomeCategoria;
     private string? confermaCancellaCategoria;
@@ -413,6 +465,15 @@
     private decimal editPrezzo;
     private string editCategoria = "";
     private bool editDisponibile;
+
+    private IEnumerable<BeachBar.Core.Entities.Prodotto> ProdottiVisibili =>
+        prodottiLista
+            .Where(p => string.IsNullOrEmpty(filtroCat) || p.Categoria == filtroCat)
+            .Where(p => string.IsNullOrWhiteSpace(prodottoFiltro) ||
+                        p.Nome.Contains(prodottoFiltro, StringComparison.OrdinalIgnoreCase));
+
+    private IEnumerable<string> CategorieVisibili =>
+        string.IsNullOrEmpty(filtroCat) ? categorie : categorie.Where(c => c == filtroCat);
 
     // ── Gestione ──────────────────────────────────────────────────────────
     private bool confermaReset;

@@ -1,6 +1,6 @@
 # Belix
 
-Gestionale web per il bar di uno stabilimento balneare. Lo staff può aprire, gestire e chiudere i conti dei clienti per ogni ombrellone o come conto volante, consultare tutto ciò che è aperto in un colpo solo, navigare lo storico per data e configurare la mappa della spiaggia in modo personalizzato.
+Gestionale web per il bar di uno stabilimento balneare. Lo staff può aprire, gestire e chiudere le **liste** (conti) dei clienti per ogni ombrellone o come lista volante, con supporto a soggiorni multi-giorno, consultare tutto ciò che è aperto in un colpo solo, navigare lo storico per data e configurare la mappa della spiaggia in modo personalizzato.
 
 Il sistema si chiama **Belix** ed è accessibile via browser — progettato per essere usato su tablet dallo staff in movimento.
 
@@ -37,11 +37,6 @@ dotnet --version
 ### 2. PostgreSQL
 
 Installa PostgreSQL (versione 14 o superiore). Il database viene creato automaticamente dalle migrations.
-
-Verifica che il servizio sia avviato:
-```bash
-psql -U postgres -c "SELECT version();"
-```
 
 ### 3. dotnet-ef
 
@@ -90,7 +85,7 @@ Console.WriteLine(BC.HashPassword("nuova-password", 12));
 # 1. Ripristina i pacchetti NuGet
 dotnet restore
 
-# 2. Crea il database e applica tutte le migrations
+# 2. Crea il database e applica la migration con tutti i dati di seed
 dotnet ef database update --project BeachBar.Infrastructure --startup-project BeachBar
 
 # 3. Avvia l'applicazione
@@ -102,11 +97,43 @@ Con HTTPS:
 dotnet run --project BeachBar --launch-profile https
 ```
 
+Con accesso da rete locale (tablet nella stessa WiFi):
+```bash
+dotnet run --project BeachBar --launch-profile lan
+```
+Poi trova il tuo IP con `ipconfig` e apri `http://192.168.x.x:5286` sul tablet.
+
 | Risorsa | URL |
 |---|---|
 | Login | `http://localhost:5286/login` |
 | App (HTTP) | `http://localhost:5286` |
 | App (HTTPS) | `https://localhost:7298` |
+
+### Reset completo del database
+
+Per ripartire da zero mantenendo il layout spiaggia configurato nel seed:
+
+```bash
+dotnet ef database drop --force --project BeachBar.Infrastructure --startup-project BeachBar
+dotnet ef database update --project BeachBar.Infrastructure --startup-project BeachBar
+```
+
+---
+
+## Dati di seed
+
+Il database viene popolato automaticamente con:
+
+- **78 ombrelloni** numerati da 1 a 78, con le posizioni esatte nella griglia
+- **Griglia 17 × 5**: 17 colonne, 5 righe, con separatori di zona dopo la colonna 9 e dopo la colonna 15
+- **Layout spiaggia**:
+  - Riga 0 (fronte mare): ombrelloni 67–77, con uno spazio vuoto nelle celle 5–10
+  - Riga 1: ombrelloni 50–66
+  - Riga 2: ombrelloni 33–49
+  - Riga 3: ombrelloni 16–32
+  - Riga 4: ombrelloni 1–15, con celle vuote agli estremi
+  - Ombrellone 78: non posizionato in griglia
+- **98 prodotti** suddivisi in 11 categorie: Panini, Insalate, Pizza, Piatti, Pasta, Frutta, Caffetteria, Bibite, Birre, Vini, Aperitivi
 
 ---
 
@@ -143,116 +170,106 @@ Authorization: Bearer eyJ...
 
 Pagina principale ad uso operativo quotidiano.
 
-**Navigatore data** — in cima compare sempre un selettore di data con frecce ◀ ▶ e il tasto "Oggi" (visibile solo quando non si è sulla data corrente). La data selezionata è uno stato globale (`DateContext`, servizio Scoped) condiviso con tutte le altre pagine: Storico usa la stessa data, le sessioni vengono filtrate per `DataRiferimento`.
+**Navigatore data** — selettore con frecce ◀ ▶ e tasto "Oggi" (visibile solo quando non si è sulla data corrente). La data è uno stato globale (`DateContext`) condiviso con Storico e Liste.
 
-**Statistiche** — tre card sempre visibili mostrano: ombrelloni attivi, totale in corso (sessioni ancora aperte), incassato oggi (sessioni chiuse dopo l'ultimo reset visivo). Quando si naviga su una data passata, "Incassato oggi" diventa "Incassato" e non applica il filtro reset.
+**Statistiche** — tre card: ombrelloni attivi, totale in corso (somma delle liste aperte che includono la data corrente nel loro range), incassato oggi.
 
-**Griglia ombrelloni** — tre modalità di rendering, selezionate automaticamente in base alla configurazione:
+**Griglia ombrelloni** — tre modalità di rendering automatiche:
 
 | Condizione | Rendering |
 |---|---|
-| Nessun ombrellone ha `CellaIndice` e nessun bordo configurato | Griglia sequenziale classica (CSS Grid, N colonne) |
-| Nessun `CellaIndice` ma bordi configurati | Righe flex con separatori, ombrelloni in sequenza |
-| Almeno un ombrellone ha `CellaIndice` | Layout custom: ogni ombrellone va nella sua cella, le celle vuote mostrano un quadrato grigio della stessa dimensione |
+| Nessun `CellaIndice` e nessun bordo | Griglia sequenziale classica (CSS Grid, N colonne) |
+| Nessun `CellaIndice` ma bordi configurati | Righe flex con separatori di zona |
+| Almeno un ombrellone con `CellaIndice` | Layout custom: ogni ombrellone nella sua cella, celle vuote come quadrati grigi della stessa dimensione |
 
-Ogni cella dell'ombrellone mostra: numero, stato (Libero / Occupato / N conti), nome cliente se presente. L'altezza è fissa e uguale per tutti — ombrelloni e placeholder grigie — per non far variare le righe al variare del contenuto.
+Le celle vuote mostrano un quadrato grigio — visibile ma neutro, per far capire il layout della spiaggia senza confondersi con gli ombrelloni liberi.
 
-Il click su un ombrellone con una sola sessione aperta va direttamente a `/conto/{id}`. Con più sessioni aperte va a `/ombrellone/{id}` che le elenca tutte.
+Clicking un ombrellone con una sola lista aperta va direttamente a `/conto/{id}`. Con più liste va a `/ombrellone/{id}`.
 
-**Stato vuoto** — se non esistono ombrelloni nel database, compare un empty state con link diretto alle Impostazioni.
-
-**Conti volanti** — sezione separata sotto la griglia per le sessioni senza postazione fissa (clienti al banco, asporto, ecc.). Il pulsante "Nuovo" apre un form inline per inserire il nome del cliente e, opzionalmente, associare il conto a un ombrellone specifico. I conti volanti esistenti vengono elencati come card con nome, prodotti e totale parziale.
+**Conti volanti** — sezione sotto la griglia per liste senza postazione fissa (bar, asporto, ecc.). Bottone "Nuova" apre un form inline con nome e ombrellone opzionale.
 
 ---
 
-### Scontrini aperti (`/scontrini`)
+### Liste aperte (`/scontrini`)
 
-Vista operativa che mostra tutti i conti aperti in questo momento, indipendentemente dalla data selezionata.
+Vista operativa: tutte le liste aperte in questo momento, indipendentemente dalla data.
 
-- **Ricerca live** per nome cliente o numero ombrellone (filtro sul campo mentre si digita)
+- **Ricerca live** per nome cliente o numero ombrellone
 - **Filtro chip** — Tutti / Ombrelloni / Volanti
-- **Ordinamento toggle** — per orario di apertura (default: dal più vecchio) o per importo (dal più alto)
-- **Riepilogo in testa** — numero di conti aperti e totale complessivo in corso
-- **Ogni riga** mostra: badge colorato (blu = ombrellone, viola = volante), nome cliente, ora di apertura, numero prodotti, totale — il tap sulla riga va direttamente al conto
-
-Utile per trovare rapidamente un cliente senza dover cercare nella griglia.
+- **Ordinamento toggle** — per orario di apertura (dal più vecchio) o per importo
+- **Riepilogo in testa** — count totale e importo complessivo in corso
+- **Tap su riga** → apre direttamente la lista
 
 ---
 
-### Conto (`/conto/[id]`)
+### Ombrellone (`/ombrellone/{id}`)
 
-Scheda operativa della singola sessione, layout a due colonne.
+Pagina per aprire una nuova lista o gestire quelle esistenti su un ombrellone.
+
+- **Liste aperte**: elenco delle liste attive per la data (o nel range multi-giorno), con nome, date, prodotti e totale parziale — tap "Gestisci →" va alla lista
+- **Apri lista**: campo nome + campo **Giorni di soggiorno** (default 1) con anteprima della data di fine — crea una nuova lista con il range di date calcolato
+- **Torna alla spiaggia**: bottone in basso che riporta alla dashboard (senza freccioline in alto)
+
+---
+
+### Lista / Conto (`/conto/{id}`)
+
+Scheda operativa della singola lista, layout a due colonne.
 
 **Colonna sinistra — prodotti:**
-- Titolo: "Ombrellone N" o "Conto Extra" con la data di riferimento
-- Nome cliente modificabile inline (tasto matita → campo input → Enter o ✔ per salvare)
+- Intestazione con numero ombrellone o "Lista Volante" + data (o range date per soggiorni multi-giorno)
+- Nome cliente modificabile inline
 - Tab per categoria prodotto
-- Griglia prodotti: tap = aggiungi una consumazione
+- Griglia prodotti: tap = aggiungi al conto del giorno corrente
 
-**Colonna destra — scontrino live:**
-- Lista consumazioni con quantità e prezzi
-- Tasto − per decrementare / rimuovere ogni riga
-- Totale aggiornato in tempo reale
-- Tasto "Chiudi conto" con conferma → registra la chiusura, libera l'ombrellone, torna alla dashboard
-- Tasto "Annulla" con conferma → elimina la sessione senza tracciarla nello storico
-
----
-
-### Ombrellone (`/ombrellone/[id]`)
-
-Pagina intermedia che compare quando un ombrellone ha più di una sessione aperta (multi-conto).
-
-- Elenca tutti i conti aperti per quell'ombrellone nella data selezionata, con nome cliente, conteggio prodotti e totale
-- Ogni conto ha un tasto "Gestisci →" che va a `/conto/{id}`
-- In fondo: form per aprire un conto aggiuntivo sullo stesso ombrellone (o prenotarne uno futuro se la data selezionata non è oggi)
+**Colonna destra — lista:**
+- Per soggiorni **single day**: lista piatta con tutti i prodotti
+- Per soggiorni **multi-giorno**: prodotti raggruppati per giorno con intestazione data e subtotale per ogni giorno, totale complessivo in fondo
+- Bottone − per decrementare/rimuovere (rimuove solo dal giorno corretto)
+- **Torna alla spiaggia** — riporta alla dashboard
+- **Chiudi e incassa** — chiude la lista e torna alla dashboard
+- **Annulla lista** — elimina senza tracciare nello storico
 
 ---
 
 ### Storico (`/storico`)
 
-Archivio delle sessioni chiuse, filtrato per data.
-
-- Stesso navigatore data della dashboard (condividono il `DateContext`)
-- Il filtro usa `DataRiferimento` (giorno in cui è stata aperta la sessione), non la data di chiusura — così una sessione aperta ieri sera e chiusa stamattina è trovabile sulla data di ieri
-- Tabella con: orario chiusura, postazione (Ombrellone #N o Conto Extra + ID sessione), cliente, totale incassato
-- Tasto "Elimina" con conferma JavaScript per rimuovere singoli record dallo storico
-- Empty state con emoji quando non ci sono sessioni per la data selezionata
+Archivio delle liste chiuse, filtrate per `DataRiferimento` (giorno di apertura, non di chiusura).
 
 ---
 
 ### Impostazioni (`/impostazioni`)
 
-Tre tab di configurazione.
-
 #### Tab Spiaggia
 
-**Dimensioni griglia** — form con numero di righe e colonne. Se il layout ha già ombrelloni posizionati, un banner di conferma avverte che il ridimensionamento azzera tutte le posizioni e i bordi fuori dai nuovi limiti.
+**Dimensioni griglia** — imposta righe × colonne. Il ridimensionamento azzera le posizioni.
 
-**Mappa ombrelloni** — editor interattivo della griglia:
-
-- Header con counter "X / N celle occupate" e indicatore del prossimo numero da piazzare
-- Toolbar con testo di aiuto e tasto "✕ Cancella" per attivare la modalità rimozione (utile su touch dove il click destro non è disponibile)
-- Etichette numeriche per righe e colonne
-- **Click su cella vuota** → posiziona il prossimo ombrellone non ancora assegnato; se non ne restano, ne crea uno nuovo
-- **Click destro su cella piena** → rimuove l'ombrellone dalla cella (torna al pool)
-- **Drag su celle vuote** (mouse e touch) → riempie in sequenza tutte le celle trascinate in un'unica operazione, con anteprima azzurra in tempo reale; il salvataggio avviene in un'unica transazione al rilascio
-- **Click sul separatore tra celle** → attiva/disattiva un bordo di zona (linea scura verticale o orizzontale) per delimitare aree della spiaggia
-- Pool degli ombrelloni non posizionati visibile sotto la griglia
-- "⚡ Popola griglia intera" → riempie tutte le celle in sequenza creando gli ombrelloni mancanti
-- "🗑️ Azzera posizioni" con conferma → rimuove tutti dall'editor senza eliminare i dati delle sessioni
-
-Le celle vuote nella dashboard mostrano un quadrato grigio della stessa dimensione degli ombrelloni, così il layout della spiaggia è sempre visibile anche per le postazioni non assegnate. Lasciare celle vuote è una scelta legittima (es. zone senza servizio).
+**Mappa ombrelloni** — editor interattivo della griglia spiaggia:
+- **Click su cella vuota** → posiziona il prossimo ombrellone non assegnato
+- **Click destro su cella piena** → rimuove dall'editor
+- **Drag (mouse e touch)** → riempie più celle in sequenza con un solo gesto; il touch non blocca lo scroll dell'editor quando non si sta trascinando
+- **Click sul separatore** → attiva/disattiva bordo di zona (linea verticale o orizzontale)
+- **⚡ Popola griglia intera** → riempie tutto sequenzialmente, crea ombrelloni mancanti
+- **🗑️ Azzera posizioni** → rimuove tutti con conferma
+- Scroll orizzontale disponibile su tablet per griglie larghe
 
 #### Tab Prodotti
 
-- **Categorie**: lista con rename inline e eliminazione con conferma (elimina anche tutti i prodotti della categoria)
-- **Prodotti**: form di aggiunta con nome, prezzo, categoria; tabella con modifica inline e eliminazione
+Tre sezioni card distinte:
+
+1. **Categorie** — rinomina e elimina categorie (con conferma: elimina anche i prodotti)
+2. **Aggiungi prodotto** — form compatto con prefisso `€` inline, step `0.01` per il prezzo; distinto visivamente (bordo sinistro blu)
+3. **Lista prodotti** — griglia auto-fill a più colonne (si adatta alla larghezza dello schermo: ~4 colonne su desktop, ~3 su tablet, ~2 su mobile) con:
+   - Barra di ricerca live per nome
+   - Chip filtro per categoria
+   - Prodotti raggruppati per sezione categoria con header e contatore
+   - Ogni prodotto come card: nome, prezzo, badge disponibilità, bottoni ✏️ 🗑️
 
 #### Tab Gestione
 
-- **Azzera contatori** — resetta il punto di partenza per "Incassato oggi" nella dashboard senza toccare i dati; i record rimangono consultabili nello storico
-- **Reset giornaliero (Forzato)** — chiude tutte le sessioni aperte forzatamente; da usare solo a fine giornata in caso di ombrelloni rimasti aperti per errore
-- **Esci** — logout e redirect al login
+- **Azzera contatori** — resetta il punto zero dell'incasso odierno senza cancellare dati (utile per casse intermedie)
+- **Reset giornaliero (Forzato)** — chiude tutte le liste aperte; usare solo a fine giornata in caso di errori
+- **Esci** — logout
 
 ---
 
@@ -263,28 +280,31 @@ ImpostazioniSpiaggia (1 riga)
 ├── NumeroOmbrelloni
 ├── NumeroColonne
 ├── NumeroRighe
-├── BordiVerticali  ← indici colonne con separatore (CSV: "1,3")
-├── BordiOrizzontali ← indici righe con separatore (CSV: "2")
+├── BordiVerticali     ← indici colonne con separatore (CSV: "9,15")
+├── BordiOrizzontali   ← indici righe con separatore
 └── UltimoResetStatistiche
 
 Ombrellone
 ├── Numero
-├── Occupato ← flag runtime per oggi; per date passate si ricalcola
-└── CellaIndice ← posizione nella griglia custom (null = non posizionato)
+├── Occupato           ← flag runtime per oggi; ricalcolato per date passate
+└── CellaIndice        ← posizione nella griglia custom (null = non posizionato)
 
-Sessione
-├── OmbrelloneId ← nullable (null = conto volante)
+Sessione  ("Lista")
+├── OmbrelloneId       ← nullable: null = lista volante
 ├── NomeCliente
-├── Apertura (DateTime UTC)
-├── Chiusura (DateTime? UTC)
-├── Chiusa (bool)
-├── DataRiferimento (DateOnly?) ← data operativa della sessione
+├── Apertura           ← DateTime UTC
+├── Chiusura           ← DateTime? UTC
+├── Chiusa             ← bool
+├── DataRiferimento    ← DateOnly? — giorno di apertura
+├── DataFine           ← DateOnly? — ultimo giorno del soggiorno (null = single day)
 └── Consumazioni[]
 
 Consumazione
 ├── SessioneId
 ├── ProdottoId
-└── Quantita
+├── Quantita
+├── Timestamp          ← DateTime UTC
+└── Giorno             ← DateOnly — giorno in cui il prodotto è stato ordinato
 
 Prodotto
 ├── Nome
@@ -293,14 +313,9 @@ Prodotto
 └── Disponibile
 ```
 
-### Migrations in ordine
+### Migrations
 
-| Migration | Data | Contenuto |
-|---|---|---|
-| `InitialCreate` | 2026-05-13 | Schema iniziale: Ombrellone, Sessione, Consumazione, Prodotto, ImpostazioniSpiaggia, seed dati |
-| `AddDataRiferimento` | 2026-05-26 | `DataRiferimento DateOnly?` su Sessione; backfill da `Apertura::date` |
-| `NullableOmbrelloneId` | 2026-05-26 | `OmbrelloneId` diventa nullable per supportare i conti volanti |
-| `AddLayoutPersonalizzato` | 2026-05-27 | `CellaIndice int?` su Ombrellone; `NumeroRighe`, `BordiVerticali`, `BordiOrizzontali` su ImpostazioniSpiaggia |
+Una singola migration `InitialCreate` contiene l'intero schema + seed data (ombrelloni, prodotti, griglia). Non ci sono migration incrementali.
 
 ---
 
@@ -311,36 +326,36 @@ BeachBar/
 ├── Components/
 │   ├── Pages/
 │   │   ├── Home.razor          ← Dashboard (griglia + conti volanti)
-│   │   ├── Scontrini.razor     ← Lista scontrini aperti con ricerca e filtri
-│   │   ├── Conto.razor         ← Gestione singola sessione
-│   │   ├── Ombrellone.razor    ← Lista conti su un ombrellone multi-sessione
-│   │   ├── Storico.razor       ← Archivio sessioni chiuse per data
+│   │   ├── Scontrini.razor     ← Liste aperte con ricerca e filtri
+│   │   ├── Conto.razor         ← Gestione singola lista (prodotti + scontrino per giorno)
+│   │   ├── Ombrellone.razor    ← Apertura lista con giorni soggiorno
+│   │   ├── Storico.razor       ← Archivio liste chiuse per data
 │   │   ├── Impostazioni.razor  ← Config spiaggia, prodotti, gestione
-│   │   ├── NotFound.razor      ← Pagina 404 personalizzata
+│   │   ├── NotFound.razor
 │   │   └── Error.razor
 │   ├── Layout/
-│   │   ├── MainLayout.razor    ← Shell con navbar Belix
+│   │   ├── MainLayout.razor    ← Shell Belix con navbar
 │   │   └── ReconnectModal.razor
-│   └── App.razor               ← HTML root, caricamento CSS/JS
+│   └── App.razor               ← HTML root, CSS/JS globali
 ├── Controllers/                ← REST API
 │   ├── AuthController.cs
 │   ├── ProdottiController.cs
 │   ├── SessioniController.cs
 │   ├── OrdiniController.cs
 │   └── Dto/
-├── Pages/                      ← Razor Pages SSR
+├── Pages/
 │   ├── Login.cshtml
 │   └── Logout.cshtml
 ├── Services/
 │   └── DateContext.cs          ← Stato data globale (Scoped)
 ├── wwwroot/
 │   ├── belix.css               ← Shell, navbar, footer
-│   ├── app.css                 ← Componenti globali riusabili
-│   ├── dashboard.css           ← Stili pagina Home
-│   ├── impostazioni.css        ← Stili pagina Impostazioni (editor incluso)
-│   ├── ombrellone.css          ← Stili pagine Conto e Ombrellone
-│   ├── scontrini.css           ← Stili pagina Scontrini
-│   ├── storico.css             ← Stili pagina Storico
+│   ├── app.css                 ← Componenti globali (alert, date navigator, empty state…)
+│   ├── dashboard.css           ← Pagina Home
+│   ├── impostazioni.css        ← Pagina Impostazioni + editor griglia
+│   ├── ombrellone.css          ← Pagine Conto e Ombrellone
+│   ├── scontrini.css           ← Pagina Liste aperte
+│   ├── storico.css             ← Pagina Storico
 │   └── editor-drag.js          ← Drag pointer-events per l'editor mappa
 └── appsettings.json
 
@@ -354,8 +369,9 @@ BeachBar.Core/
 
 BeachBar.Infrastructure/
 ├── Data/
-│   └── BeachBarDbContext.cs
+│   └── BeachBarDbContext.cs    ← DbContext + seed completo (ombrelloni, prodotti, griglia)
 ├── Migrations/
+│   └── InitialCreate           ← Unica migration con schema + seed
 └── Services/
     ├── ISessioniService.cs / SessioniService.cs
     ├── IImpostazioniService.cs / ImpostazioniService.cs
@@ -383,39 +399,24 @@ Tutti gli endpoint tranne il login richiedono `Authorization: Bearer <token>`.
 | GET | `/api/prodotti/{id}` | Singolo prodotto |
 | GET | `/api/prodotti/categoria/{categoria}` | Prodotti per categoria |
 
-### Sessioni
+### Sessioni (Liste)
 
 | Metodo | Endpoint | Descrizione |
 |---|---|---|
-| GET | `/api/sessioni` | Tutte le sessioni |
-| GET | `/api/sessioni/aperte` | Solo sessioni aperte |
-| GET | `/api/sessioni/{id}` | Sessione con consumazioni |
-| POST | `/api/sessioni` | Apre nuova sessione su un ombrellone |
-| POST | `/api/sessioni/extra` | Apre un conto volante (senza ombrellone) |
-| PUT | `/api/sessioni/{id}/chiudi` | Chiude la sessione |
+| GET | `/api/sessioni` | Tutte le liste |
+| GET | `/api/sessioni/aperte` | Solo liste aperte |
+| GET | `/api/sessioni/{id}` | Lista con consumazioni |
+| POST | `/api/sessioni` | Apre nuova lista su un ombrellone |
+| POST | `/api/sessioni/extra` | Apre una lista volante |
+| PUT | `/api/sessioni/{id}/chiudi` | Chiude la lista |
 
-### Ordini
+### Ordini (Consumazioni)
 
 | Metodo | Endpoint | Descrizione |
 |---|---|---|
-| GET | `/api/sessioni/{sessioneId}/ordini` | Consumazioni della sessione |
+| GET | `/api/sessioni/{sessioneId}/ordini` | Consumazioni della lista |
 | POST | `/api/sessioni/{sessioneId}/ordini` | Aggiunge una consumazione |
 | DELETE | `/api/sessioni/{sessioneId}/ordini/{ordineId}` | Rimuove una consumazione |
-
-### Codici di risposta
-
-| Codice | Significato |
-|---|---|
-| `200 OK` | Richiesta riuscita |
-| `201 Created` | Risorsa creata, header `Location` punta alla nuova risorsa |
-| `204 No Content` | Eliminazione riuscita |
-| `400 Bad Request` | Body non valido |
-| `401 Unauthorized` | Token JWT assente, scaduto o non valido |
-| `404 Not Found` | Risorsa non trovata |
-| `409 Conflict` | Operazione non permessa nello stato attuale |
-| `500 Internal Server Error` | Errore imprevisto lato server |
-
-Per testare le API usa Postman con il file `BeachBar.postman_collection.json` incluso nella root. Lo script nella tab *Tests* della request Login salva automaticamente il token nella variabile `{{token}}` usata da tutte le altre request.
 
 ---
 
@@ -423,52 +424,43 @@ Per testare le API usa Postman con il file `BeachBar.postman_collection.json` in
 
 ### DateContext — stato data globale
 
-`BeachBar.Services.DateContext` è un servizio Scoped (un'istanza per circuito Blazor) che mantiene la data selezionata dallo staff. Tutte le pagine leggono e scrivono la stessa istanza: cambiare data sulla dashboard aggiorna anche Storico e viceversa. I metodi `Imposta`, `Avanza`, `Arretra`, `TornaOggi` e la proprietà `IsOggi` sono l'unica fonte di verità sulla data operativa corrente.
+`DateContext` è un servizio Scoped (una istanza per circuito Blazor) che mantiene la data selezionata. Tutti i componenti leggono e scrivono la stessa istanza: cambiare data sulla dashboard aggiorna anche Storico e liste.
+
+### Soggiorni multi-giorno
+
+`Sessione.DataFine DateOnly?` estende il concetto di lista a più giorni. Tutte le query che filtrano per data usano un range: `DataRiferimento <= data && (DataFine == null || DataFine >= data)`. Questo include automaticamente la dashboard, le statistiche e le liste attive.
+
+`Consumazione.Giorno DateOnly` traccia il giorno in cui ogni prodotto è stato ordinato, abilitando la visualizzazione per-giorno nella schermata della lista.
 
 ### Tre layout di griglia
 
-Il rendering della griglia ombrelloni supporta tre modalità per coprire tre casi d'uso reali senza richiedere configurazione esplicita:
-
-1. **Classico** — nessuna configurazione, tutto sequenziale. Basta impostare il numero di colonne.
-2. **Sequenziale con zone** — nessun posizionamento custom ma con separatori di zona configurati. Il codice calcola le righe necessarie e le riempie in ordine, rispettando i separatori.
-3. **Mappa custom** — ogni ombrellone ha un `CellaIndice` che lo posiziona in una cella precisa della griglia. Le celle vuote mostrano un placeholder grigio della stessa dimensione.
-
-La scelta avviene in `CaricaDati()` in `Home.razor` in base alle proprietà degli ombrelloni caricati, senza nessun flag aggiuntivo nel DB.
+La griglia ombrelloni supporta tre modalità selezionate automaticamente senza configurazione esplicita:
+1. **Classico** — nessuna configurazione, layout sequenziale
+2. **Sequenziale con zone** — bordi configurati ma nessun `CellaIndice`
+3. **Mappa custom** — `CellaIndice` su ogni ombrellone; celle vuote mostrano placeholder grigi della stessa dimensione
 
 ### Drag con Pointer Events (mouse + touch)
 
-Il vecchio meccanismo di drag usava `@onmousedown`/`@onmouseenter` su ogni cella Blazor — un round-trip al server per ogni cella sfiorata e incompatibile con touch (il browser cattura il touch sull'elemento iniziale e non propaga mai `mouseenter` ad altri elementi).
+L'editor della mappa usa `editor-drag.js` con Pointer Events API — funziona identicamente con mouse, dito e penna. Il `touch-action: none` viene applicato solo durante il drag attivo (dal JS), non staticamente nel CSS, così lo scroll orizzontale dell'editor è disponibile quando non si sta trascinando.
 
-Il nuovo meccanismo usa `editor-drag.js` con Pointer Events API (`pointerdown`, `pointermove`, `pointerup`, `pointercancel`): funziona identicamente con mouse, dito e penna. Durante il drag, JS aggiorna le classi CSS direttamente nel DOM (anteprima azzurra senza round-trip). Al rilascio, una sola chiamata `[JSInvokable] CompletaDragJS(int[] indici)` porta la lista delle celle a Blazor, che esegue `AssegnaCelleAsync` in un'unica transazione DB. `touch-action: none` sul `.layout-editor` impedisce lo scroll della pagina durante il drag su touch.
+### CSS a file separati
 
-### Conti volanti (OmbrelloneId nullable)
+Ogni pagina ha il suo CSS. Le classi globali riusabili stanno in `app.css`. L'ordine di caricamento in `App.razor` è: shell → globali → pagine in ordine alfabetico.
 
-`Sessione.OmbrelloneId` è nullable. Un valore `null` indica un conto volante — un cliente senza postazione fissa. Questo permette di gestire consumazioni al banco, asporto o prenotazioni di servizi senza dover assegnare un ombrellone. I conti volanti possono essere associati facoltativamente a un ombrellone (per la fatturazione) ma non influiscono sul flag `Occupato` dell'ombrellone.
+### Seed completo nel DbContext
 
-### Gestione errori a tre livelli
-
-- **Service layer** — lancia `InvalidOperationException` se la risorsa non esiste; restituisce `null` per i metodi di sola lettura su risorsa singola; non lancia se un set è vuoto.
-- **Controller layer** — gestisce i casi attesi con i codici HTTP corretti, cattura le eccezioni impreviste con `LogError` e restituisce `500` senza esporre dettagli.
-- **Blazor layer** — ogni componente mantiene una variabile `string? errore` mostrata come banner rosso; ogni metodo async azzera `errore` prima della chiamata e lo imposta nel `catch`.
-
-### Struttura CSS a file separati
-
-Ogni pagina ha il proprio file CSS caricato globalmente da `App.razor`. Le classi sono organizzate per evitare conflitti di nomi:
-
-- Prefisso `omb-` per classi usate dentro le celle ombrellone (`omb-nome`) per non sovrascrivere le stesse classi usate nella pagina Conto con semantica diversa.
-- Le classi veramente globali (date navigator, alert-errore, caricamento, empty-state, alert-conferma, titolo, sezione-card) stanno in `app.css`.
-- L'ordine di caricamento in `App.razor` è: shell → globali → pagine in ordine alfabetico.
+Il seed in `BeachBarDbContext.OnModelCreating` contiene l'intera configurazione iniziale: 78 ombrelloni con le posizioni esatte della griglia 17×5, bordi di zona, e tutti i 98 prodotti del menu. Una singola migration `InitialCreate` porta il databaseallo stato operativo completo.
 
 ---
 
 ## Cosa manca / da aggiungere
 
-- **Aggiornamento automatico della dashboard** — se due tablet sono aperti simultaneamente, le modifiche da uno non appaiono sull'altro senza ricaricare. Blazor ha già SignalR attivo: basterebbe un timer o un meccanismo di broadcast per aggiornare la griglia ogni N secondi.
-- **Report e statistiche** — endpoint `GET /api/statistiche` con totale incassato per data, per ombrellone, per categoria prodotto. Al momento le statistiche sono solo sul totale giornaliero.
-- **Export CSV/PDF** dello storico giornaliero per la contabilità.
-- **Logging strutturato con Serilog** — `ILogger` è già iniettato in ogni controller; manca solo il sink su file o su Seq con correlazione per request ID.
-- **Unit test** — i servizi sono testabili con `UseInMemoryDatabase` di EF Core; manca la suite xUnit con copertura dei casi limite (sessione chiusa, quantità fuori range, ombrellone inesistente).
-- **Rate limiting sull'endpoint di login** — per mitigare attacchi brute-force. ASP.NET Core 8+ ha `RateLimiter` built-in.
-- **Refresh token** — il JWT dura 8 ore (configurabile); un refresh token eviterebbe il re-login.
-- **Gestione multi-utente** — al momento esiste un solo account admin configurato in `appsettings.json`. Una tabella `Utenti` con ruoli (cameriere vs. gestore) permetterebbe di tracciare chi ha aperto o chiuso una sessione.
-- **Supporto PWA / installazione su tablet** — aggiungere un manifest e un service worker minimal permetterebbe di installare l'app come PWA sulla schermata home del tablet, con icona dedicata e avvio senza barra del browser.
+- **Aggiornamento automatico della dashboard** — con più tablet aperti contemporaneamente, le modifiche da uno non appaiono sull'altro senza ricaricare. Blazor ha già SignalR attivo: basterebbe un broadcast dal server alla chiusura/apertura di una lista
+- **Export CSV/PDF** dello storico per la contabilità
+- **Report statistiche** — endpoint `GET /api/statistiche` con totale incassato per data, per ombrellone, per categoria prodotto
+- **Logging strutturato con Serilog** — `ILogger` è già iniettato in ogni controller; manca solo il sink su file
+- **Unit test** — i servizi sono testabili con `UseInMemoryDatabase`; manca la suite xUnit
+- **Rate limiting** sull'endpoint di login (ASP.NET Core 8+ ha `RateLimiter` built-in)
+- **Refresh token** — il JWT dura 8 ore; un refresh token eviterebbe il re-login
+- **Multi-utente con ruoli** — un solo account admin; una tabella Utenti con ruoli (cameriere/gestore) permetterebbe di tracciare chi ha aperto o chiuso una lista
+- **PWA** — aggiungendo un manifest e un service worker minimal, l'app si installa come icona sulla schermata home del tablet senza barra del browser

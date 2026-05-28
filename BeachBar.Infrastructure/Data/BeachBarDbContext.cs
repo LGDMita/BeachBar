@@ -15,13 +15,46 @@ public class BeachBarDbContext : DbContext
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
-        // Seed ombrelloni
-        var ombrelloni = Enumerable.Range(1, 20)
+        // Seed ombrelloni con posizioni griglia (17 col × 5 righe, bordi dopo col 9 e 15)
+        // Riga 0 (celle 0-16):  celle 5-10 vuote — prima fila con gap centrale
+        // Riga 1 (celle 17-33): fila completa
+        // Riga 2 (celle 34-50): fila completa
+        // Riga 3 (celle 51-67): fila completa
+        // Riga 4 (celle 68-84): celle 68 e 84 vuote — ultima fila, prima e ultima posizione libere
+        var posizioni = new Dictionary<int, int?>
+        {
+            { 67,  0 }, { 68,  1 }, { 69,  2 }, { 70,  3 }, { 71,  4 },
+            // celle 5-10 vuote in riga 0
+            { 72, 11 }, { 73, 12 }, { 74, 13 }, { 75, 14 }, { 76, 15 }, { 77, 16 },
+
+            { 50, 17 }, { 51, 18 }, { 52, 19 }, { 53, 20 }, { 54, 21 }, { 55, 22 },
+            { 56, 23 }, { 57, 24 }, { 58, 25 }, { 59, 26 }, { 60, 27 }, { 61, 28 },
+            { 62, 29 }, { 63, 30 }, { 64, 31 }, { 65, 32 }, { 66, 33 },
+
+            { 33, 34 }, { 34, 35 }, { 35, 36 }, { 36, 37 }, { 37, 38 }, { 38, 39 },
+            { 39, 40 }, { 40, 41 }, { 41, 42 }, { 42, 43 }, { 43, 44 }, { 44, 45 },
+            { 45, 46 }, { 46, 47 }, { 47, 48 }, { 48, 49 }, { 49, 50 },
+
+            { 16, 51 }, { 17, 52 }, { 18, 53 }, { 19, 54 }, { 20, 55 }, { 21, 56 },
+            { 22, 57 }, { 23, 58 }, { 24, 59 }, { 25, 60 }, { 26, 61 }, { 27, 62 },
+            { 28, 63 }, { 29, 64 }, { 30, 65 }, { 31, 66 }, { 32, 67 },
+
+            // cella 68 vuota in riga 4
+            {  1, 69 }, {  2, 70 }, {  3, 71 }, {  4, 72 }, {  5, 73 }, {  6, 74 },
+            {  7, 75 }, {  8, 76 }, {  9, 77 }, { 10, 78 }, { 11, 79 }, { 12, 80 },
+            { 13, 81 }, { 14, 82 }, { 15, 83 },
+            // cella 84 vuota in riga 4
+
+            { 78, null }, // non posizionato
+        };
+
+        var ombrelloni = Enumerable.Range(1, 78)
             .Select(i => new Ombrellone
             {
                 Id = i,
                 Numero = i,
-                Occupato = false
+                Occupato = false,
+                CellaIndice = posizioni.TryGetValue(i, out var cella) ? cella : null
             })
             .ToList();
 
@@ -151,14 +184,16 @@ public class BeachBarDbContext : DbContext
             new Prodotto { Id = 98, Nome = "Campari Shakerato", Prezzo = 8.00m, Disponibile = true, Categoria = "Aperitivi" }
         );
 
-        // Seed impostazioni spiaggia
+        // Seed impostazioni spiaggia — 17 colonne × 5 righe, bordi dopo col 9 e 15
         modelBuilder.Entity<ImpostazioniSpiaggia>().HasData(
             new ImpostazioniSpiaggia
             {
                 Id = 1,
-                NumeroOmbrelloni = 20,
-                NumeroColonne = 4,
-                NumeroRighe = 5
+                NumeroOmbrelloni = 77,
+                NumeroColonne = 17,
+                NumeroRighe = 5,
+                BordiVerticali = "9,15",
+                BordiOrizzontali = null
             }
         );
     }

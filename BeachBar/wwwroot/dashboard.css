@@ -45,21 +45,21 @@
 
 .griglia {
     display: grid;
-    gap: 16px;
+    gap: 12px;
     width: fit-content;
     margin: 0 auto;
 }
 
 .ombrellone {
     border: none;
-    border-radius: 16px;
-    padding: 24px 12px;
-    font-size: 1.1rem;
+    border-radius: 12px;
+    padding: 16px 8px;
+    font-size: 0.92rem;
     cursor: pointer;
     display: flex;
     flex-direction: column;
     align-items: center;
-    gap: 8px;
+    gap: 5px;
     transition: transform 0.1s;
 }
 
@@ -68,12 +68,12 @@
     }
 
 .numero {
-    font-size: 2rem;
+    font-size: 1.5rem;
     font-weight: bold;
 }
 
 .stato {
-    font-size: 0.85rem;
+    font-size: 0.76rem;
 }
 
 /* Nome cliente sull'ombrellone — prefisso omb- per evitare conflitti con ombrellone.css.
@@ -115,23 +115,23 @@
 
 /* Altezza fissa su entrambi — ombrelloni e placeholder sempre uguali */
 .griglia-custom .ombrellone {
-    width: 120px;
-    height: 130px;
+    width: 88px;
+    height: 96px;
     flex-shrink: 0;
 }
 
 .ombrellone-placeholder {
-    width: 120px;
-    height: 130px;
+    width: 88px;
+    height: 96px;
     flex-shrink: 0;
-    border-radius: 16px;
+    border-radius: 12px;
     background: #e9ecef;
 }
 
 /* ─── Separatori di zona nella griglia ───────── */
 
 .griglia-sep-v {
-    width: 16px;
+    width: 12px;
     flex-shrink: 0;
     position: relative;
     display: flex;
@@ -142,15 +142,15 @@
 .griglia-sep-v.sep-attivo::after {
     content: '';
     position: absolute;
-    width: 4px;
+    width: 3px;
     height: 100%;
-    background: rgba(0, 0, 0, 0.22);
+    background: rgba(0, 0, 0, 0.45);
     border-radius: 2px;
 }
 
 .griglia-sep-h-row {
     display: flex;
-    height: 16px;
+    height: 12px;
     position: relative;
 }
 
@@ -161,19 +161,19 @@
     right: 0;
     top: 50%;
     transform: translateY(-50%);
-    height: 4px;
-    background: rgba(0, 0, 0, 0.22);
+    height: 3px;
+    background: rgba(0, 0, 0, 0.45);
     border-radius: 2px;
     z-index: 1;
 }
 
 .griglia-sep-h-seg {
-    width: 120px;
+    width: 88px;
     flex-shrink: 0;
 }
 
 .griglia-sep-corner {
-    width: 16px;
+    width: 12px;
     flex-shrink: 0;
 }
 
@@ -327,48 +327,46 @@
     }
 
     .griglia {
-        gap: 10px;
+        gap: 9px;
     }
 
     .ombrellone {
-        padding: 14px 8px;
-        border-radius: 12px;
-        gap: 6px;
+        padding: 13px 6px;
+        gap: 4px;
     }
 
     .numero {
-        font-size: 1.5rem;
+        font-size: 1.3rem;
     }
 
     .stato {
-        font-size: 0.78rem;
+        font-size: 0.72rem;
     }
 
     .griglia-custom .ombrellone {
-        width: 96px;
-        height: 104px;
+        width: 78px;
+        height: 86px;
     }
 
     .ombrellone-placeholder {
-        width: 96px;
-        height: 104px;
-        border-radius: 12px;
+        width: 78px;
+        height: 86px;
     }
 
     .griglia-sep-v {
-        width: 10px;
+        width: 9px;
     }
 
     .griglia-sep-h-row {
-        height: 10px;
+        height: 9px;
     }
 
     .griglia-sep-h-seg {
-        width: 96px;
+        width: 78px;
     }
 
     .griglia-sep-corner {
-        width: 10px;
+        width: 9px;
     }
 
     .conti-extra-section {
@@ -416,21 +414,22 @@
     }
 
     .griglia {
-        gap: 10px;
+        gap: 7px;
     }
 
     .ombrellone {
-        padding: 16px 8px;
-        font-size: 1rem;
+        padding: 10px 4px;
+        font-size: 0.82rem;
     }
 
     .griglia-custom .ombrellone,
     .ombrellone-placeholder {
-        height: 100px;
+        width: 68px;
+        height: 76px;
     }
 
     .numero {
-        font-size: 1.5rem;
+        font-size: 1.15rem;
     }
 
     .conti-extra-section {
