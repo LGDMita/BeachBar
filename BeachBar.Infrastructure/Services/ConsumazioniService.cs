@@ -10,10 +10,10 @@ public class ConsumazioniService : IConsumazioniService
 
     public ConsumazioniService(BeachBarDbContext db) => _db = db;
 
-    public async Task AggiungiConsumazione(int sessioneId, int prodottoId)
+    public async Task AggiungiConsumazione(int sessioneId, int prodottoId, DateOnly giorno)
     {
         var consumazione = await _db.Consumazioni
-            .FirstOrDefaultAsync(c => c.SessioneId == sessioneId && c.ProdottoId == prodottoId);
+            .FirstOrDefaultAsync(c => c.SessioneId == sessioneId && c.ProdottoId == prodottoId && c.Giorno == giorno);
 
         if (consumazione != null)
             consumazione.Quantita++;
@@ -23,7 +23,8 @@ public class ConsumazioniService : IConsumazioniService
                 SessioneId = sessioneId,
                 ProdottoId = prodottoId,
                 Quantita = 1,
-                Timestamp = DateTime.UtcNow
+                Timestamp = DateTime.UtcNow,
+                Giorno = giorno
             });
 
         await _db.SaveChangesAsync();
@@ -34,6 +35,7 @@ public class ConsumazioniService : IConsumazioniService
         var consumazione = await _db.Consumazioni
             .FirstOrDefaultAsync(c => c.SessioneId == sessioneId && c.ProdottoId == prodottoId);
 
+        var oggi = DateOnly.FromDateTime(DateTime.UtcNow);
         if (consumazione != null)
         {
             consumazione.Quantita += quantita;
@@ -45,7 +47,8 @@ public class ConsumazioniService : IConsumazioniService
                 SessioneId = sessioneId,
                 ProdottoId = prodottoId,
                 Quantita = quantita,
-                Timestamp = DateTime.UtcNow
+                Timestamp = DateTime.UtcNow,
+                Giorno = oggi
             };
             _db.Consumazioni.Add(consumazione);
         }
@@ -56,10 +59,10 @@ public class ConsumazioniService : IConsumazioniService
         return consumazione;
     }
 
-    public async Task RimuoviConsumazione(int sessioneId, int prodottoId)
+    public async Task RimuoviConsumazione(int sessioneId, int prodottoId, DateOnly giorno)
     {
         var consumazione = await _db.Consumazioni
-            .FirstOrDefaultAsync(c => c.SessioneId == sessioneId && c.ProdottoId == prodottoId);
+            .FirstOrDefaultAsync(c => c.SessioneId == sessioneId && c.ProdottoId == prodottoId && c.Giorno == giorno);
         if (consumazione == null) return;
 
         if (consumazione.Quantita > 1)

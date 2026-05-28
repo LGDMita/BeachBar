@@ -302,6 +302,95 @@
     margin: 0;
 }
 
+/* ─── Tablet ─────────────────────────────────── */
+
+@media (max-width: 1024px) {
+    .dashboard {
+        padding: 14px;
+    }
+
+    .statistiche {
+        gap: 10px;
+        margin-bottom: 18px;
+    }
+
+    .stat-card {
+        padding: 12px 8px;
+    }
+
+    .stat-valore {
+        font-size: 1.25rem;
+    }
+
+    .stat-label {
+        font-size: 0.78rem;
+    }
+
+    .griglia {
+        gap: 10px;
+    }
+
+    .ombrellone {
+        padding: 14px 8px;
+        border-radius: 12px;
+        gap: 6px;
+    }
+
+    .numero {
+        font-size: 1.5rem;
+    }
+
+    .stato {
+        font-size: 0.78rem;
+    }
+
+    .griglia-custom .ombrellone {
+        width: 96px;
+        height: 104px;
+    }
+
+    .ombrellone-placeholder {
+        width: 96px;
+        height: 104px;
+        border-radius: 12px;
+    }
+
+    .griglia-sep-v {
+        width: 10px;
+    }
+
+    .griglia-sep-h-row {
+        height: 10px;
+    }
+
+    .griglia-sep-h-seg {
+        width: 96px;
+    }
+
+    .griglia-sep-corner {
+        width: 10px;
+    }
+
+    .conti-extra-section {
+        margin-top: 16px;
+        padding: 14px 16px;
+        border-radius: 14px;
+    }
+
+    .conti-extra-header {
+        margin-bottom: 10px;
+    }
+
+    .btn-nuovo-conto {
+        padding: 7px 14px;
+        font-size: 0.85rem;
+    }
+
+    .conto-extra-card {
+        padding: 10px 12px;
+    }
+}
+
 /* ─── Mobile ─────────────────────────────────── */
 
 @media (max-width: 600px) {

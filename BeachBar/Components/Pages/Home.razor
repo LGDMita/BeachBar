@@ -166,7 +166,7 @@
                 </select>
                 <div class="nuovoconto-azioni">
                     <button class="btn-apri" @onclick="ApriContoExtra">
-                        @(DateCtx.IsOggi ? "Apri" : "Prenota")
+                        @(DateCtx.IsOggi ? "Apri lista" : "Prenota")
                     </button>
                     <button class="btn-annulla-form" @onclick="() => { mostraNuovoContoExtra = false; nomeContoExtra = null; ombrelloneExtraStr = null; }">
                         ✕

@@ -5,33 +5,47 @@
 @inject BeachBar.Infrastructure.Services.IConsumazioniService Consumazioni
 @inject BeachBar.Services.DateContext DateCtx
 @inject NavigationManager Nav
+@using System.Globalization
 
 <div class="scheda-layout">
 
     <div class="colonna-sinistra">
-        <button class="btn-torna" @onclick="Torna">← Indietro</button>
-
         @if (sessione == null && errore == null)
         {
             <p>Caricamento...</p>
         }
         else
         {
-            <h2>@(sessione?.OmbrelloneId.HasValue == true ? $"Ombrellone {sessione.Ombrellone?.Numero}" : "Conto Extra")</h2>
-            <div style="font-size: 0.85rem; color: #6c757d; margin-bottom: 8px;">
-                📅 @((sessione?.DataRiferimento ?? DateCtx.DataSelezionata).ToString("dd MMMM yyyy", new System.Globalization.CultureInfo("it-IT")))
-            </div>
+            <h2 class="conto-intestazione">
+                @(sessione?.OmbrelloneId.HasValue == true ? $"Ombrellone {sessione.Ombrellone?.Numero}" : "Lista Volante")
+            </h2>
+
+            @if (sessione != null)
+            {
+                @* Data o range date *@
+                @if (sessione.DataFine.HasValue)
+                {
+                    <p class="conto-data">
+                        📅 @sessione.DataRiferimento?.ToString("dd MMM", new CultureInfo("it-IT")) –
+                        @sessione.DataFine?.ToString("dd MMM yyyy", new CultureInfo("it-IT"))
+                    </p>
+                }
+                else
+                {
+                    <p class="conto-data">
+                        📅 @((sessione.DataRiferimento ?? DateCtx.DataSelezionata).ToString("dd MMMM yyyy", new CultureInfo("it-IT")))
+                    </p>
+                }
+            }
 
             @if (errore != null)
             {
-                <div style="background:#f8d7da; color:#721c24; border:1px solid #f5c6cb; padding:10px 14px; border-radius:8px; margin-bottom:12px;">
-                    ⚠️ @errore
-                </div>
+                <div class="alert-errore">⚠️ @errore</div>
             }
 
             @if (sessione != null)
             {
-                <div class="nome-cliente-container" style="display: flex; justify-content: space-between; align-items: center;">
+                <div class="nome-cliente-container" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
                     @if (isEditingNome)
                     {
                         <input class="input-nome" @bind="nuovoNome" @onkeyup="@(async (e) => { if (e.Key == "Enter") await SalvaNome(); })" />
@@ -70,28 +84,55 @@
     @if (sessione != null)
     {
         <div class="colonna-destra">
-            <h3>Scontrino</h3>
+            <h3>Lista</h3>
             <p class="nome-cliente-scontrino">@(sessione.NomeCliente ?? "Cliente anonimo")</p>
 
             <div class="scontrino-righe">
                 @if (!sessione.Consumazioni.Any())
                 {
-                    <p class="vuoto">Nessuna consumazione ancora.</p>
+                    <p class="vuoto">Nessun prodotto ancora.</p>
                 }
                 else
                 {
-                    @foreach (var c in sessione.Consumazioni)
+                    @* Raggruppa per giorno — utile per soggiorni multi-giorno *@
+                    var giorni = sessione.Consumazioni
+                        .GroupBy(c => c.Giorno)
+                        .OrderBy(g => g.Key)
+                        .ToList();
+
+                    @foreach (var gruppo in giorni)
                     {
-                        <div class="riga-scontrino">
-                            <div class="riga-info">
-                                <span class="riga-nome">@c.Prodotto.Nome</span>
-                                <span class="riga-qty">x@(c.Quantita)</span>
+                        var totaleGiorno = gruppo.Sum(c => c.Quantita * c.Prodotto.Prezzo);
+                        var isOggi = gruppo.Key == DateCtx.DataSelezionata;
+
+                        @if (giorni.Count > 1)
+                        {
+                            <div class="lista-giorno-header">
+                                @gruppo.Key.ToString("dddd dd MMM", new CultureInfo("it-IT"))
                             </div>
-                            <div class="riga-destra">
-                                <span class="riga-totale">€ @((c.Quantita * c.Prodotto.Prezzo).ToString("0.00"))</span>
-                                <button class="btn-rimuovi" @onclick="() => Rimuovi(c.ProdottoId)">−</button>
+                        }
+
+                        @foreach (var c in gruppo)
+                        {
+                            <div class="riga-scontrino">
+                                <div class="riga-info">
+                                    <span class="riga-nome">@c.Prodotto.Nome</span>
+                                    <span class="riga-qty">x@(c.Quantita)</span>
+                                </div>
+                                <div class="riga-destra">
+                                    <span class="riga-totale">€ @((c.Quantita * c.Prodotto.Prezzo).ToString("0.00"))</span>
+                                    @if (isOggi || !sessione.DataFine.HasValue)
+                                    {
+                                        <button class="btn-rimuovi" @onclick="() => Rimuovi(c.ProdottoId, gruppo.Key)">−</button>
+                                    }
+                                </div>
                             </div>
-                        </div>
+                        }
+
+                        @if (giorni.Count > 1)
+                        {
+                            <div class="lista-giorno-subtotale">Subtotale: € @totaleGiorno.ToString("0.00")</div>
+                        }
                     }
                 }
             </div>
@@ -101,13 +142,15 @@
             </div>
 
             <div class="azioni-scontrino" style="display: flex; flex-direction: column; gap: 10px; margin-top: 20px;">
-                <button class="btn-torna-dashboard" @onclick="Torna">Va bene così →</button>
+                <button class="btn-torna-dashboard" @onclick='() => Nav.NavigateTo("/")'>
+                    Torna alla spiaggia
+                </button>
                 @if (!mostraConfermaAnnulla)
                 {
                     <button class="btn-chiudi" @onclick="ChiudiSessione">Chiudi e incassa</button>
                     <button class="btn-annulla" @onclick="() => mostraConfermaAnnulla = true"
                             style="background-color: #f8d7da; color: #721c24;">
-                        Annulla sessione
+                        Annulla lista
                     </button>
                 }
                 else
@@ -138,7 +181,7 @@
 
     private List<string> categorie => prodotti.Select(p => p.Categoria).Distinct().OrderBy(c => c).ToList();
     private List<BeachBar.Core.Entities.Prodotto> prodottiFiltrati =>
-        prodotti.Where(p => p.Categoria == categoriaSelezionata).ToList();
+        prodotti.Where(p => p.Categoria == categoriaSelezionata && p.Disponibile).ToList();
 
     protected override async Task OnInitializedAsync()
     {
@@ -146,45 +189,22 @@
         {
             prodotti = await Prodotti.GetProdottiAsync();
             sessione = await Sessioni.GetSessioneByIdAsync(Id);
-            if (sessione == null)
-            {
-                errore = $"Sessione {Id} non trovata.";
-                return;
-            }
-            if (sessione.Chiusa)
-            {
-                errore = "Questa sessione è già chiusa.";
-                sessione = null;
-                return;
-            }
+            if (sessione == null) { errore = $"Lista {Id} non trovata."; return; }
+            if (sessione.Chiusa) { errore = "Questa lista è già chiusa."; sessione = null; return; }
             if (categorie.Any()) categoriaSelezionata = categorie.First();
         }
-        catch (Exception ex)
-        {
-            errore = $"Impossibile caricare la sessione: {ex.Message}";
-        }
+        catch (Exception ex) { errore = $"Impossibile caricare la lista: {ex.Message}"; }
     }
 
-    private void IniziaModifica()
-    {
-        nuovoNome = sessione?.NomeCliente;
-        isEditingNome = true;
-    }
+    private void IniziaModifica() { nuovoNome = sessione?.NomeCliente; isEditingNome = true; }
 
     private async Task SalvaNome()
     {
         if (sessione != null)
         {
             errore = null;
-            try
-            {
-                await Sessioni.AggiornaNomeSessioneAsync(sessione.Id, nuovoNome);
-                sessione.NomeCliente = nuovoNome;
-            }
-            catch (Exception ex)
-            {
-                errore = $"Impossibile salvare il nome: {ex.Message}";
-            }
+            try { await Sessioni.AggiornaNomeSessioneAsync(sessione.Id, nuovoNome); sessione.NomeCliente = nuovoNome; }
+            catch (Exception ex) { errore = $"Impossibile salvare il nome: {ex.Message}"; }
         }
         isEditingNome = false;
     }
@@ -194,63 +214,34 @@
         errore = null;
         try
         {
-            await Consumazioni.AggiungiConsumazione(sessione!.Id, prodottoId);
+            await Consumazioni.AggiungiConsumazione(sessione!.Id, prodottoId, DateCtx.DataSelezionata);
             sessione = await Sessioni.GetSessioneByIdAsync(Id);
         }
-        catch (Exception ex)
-        {
-            errore = $"Impossibile aggiungere il prodotto: {ex.Message}";
-        }
+        catch (Exception ex) { errore = $"Impossibile aggiungere il prodotto: {ex.Message}"; }
     }
 
-    private async Task Rimuovi(int prodottoId)
+    private async Task Rimuovi(int prodottoId, DateOnly giorno)
     {
         errore = null;
         try
         {
-            await Consumazioni.RimuoviConsumazione(sessione!.Id, prodottoId);
+            await Consumazioni.RimuoviConsumazione(sessione!.Id, prodottoId, giorno);
             sessione = await Sessioni.GetSessioneByIdAsync(Id);
         }
-        catch (Exception ex)
-        {
-            errore = $"Impossibile rimuovere il prodotto: {ex.Message}";
-        }
+        catch (Exception ex) { errore = $"Impossibile rimuovere il prodotto: {ex.Message}"; }
     }
 
     private async Task ChiudiSessione()
     {
         errore = null;
-        try
-        {
-            await Sessioni.ChiudiSessioneAsync(sessione!.Id);
-            Torna();
-        }
-        catch (Exception ex)
-        {
-            errore = $"Impossibile chiudere la sessione: {ex.Message}";
-        }
+        try { await Sessioni.ChiudiSessioneAsync(sessione!.Id); Nav.NavigateTo("/"); }
+        catch (Exception ex) { errore = $"Impossibile chiudere la lista: {ex.Message}"; }
     }
 
     private async Task EseguiAnnulla()
     {
         errore = null;
-        try
-        {
-            await Sessioni.AnnullaSessioneAsync(sessione!.Id);
-            Torna();
-        }
-        catch (Exception ex)
-        {
-            mostraConfermaAnnulla = false;
-            errore = $"Impossibile annullare la sessione: {ex.Message}";
-        }
-    }
-
-    private void Torna()
-    {
-        if (sessione?.OmbrelloneId.HasValue == true)
-            Nav.NavigateTo("/ombrellone/" + sessione.OmbrelloneId.Value);
-        else
-            Nav.NavigateTo("/");
+        try { await Sessioni.AnnullaSessioneAsync(sessione!.Id); Nav.NavigateTo("/"); }
+        catch (Exception ex) { mostraConfermaAnnulla = false; errore = $"Impossibile annullare la lista: {ex.Message}"; }
     }
 }

@@ -31,8 +31,8 @@ public interface ISessioniService
     /// <summary>Restituisce lo storico delle sessioni chiuse per la data specificata, dalla più recente.</summary>
     Task<List<Sessione>> GetStoricoSessioniAsync(DateOnly filtroData);
 
-    /// <summary>Apre una nuova sessione su un ombrellone per la data specificata. Restituisce la sessione creata.</summary>
-    Task<Sessione> ApriSessioneAsync(int ombrelloneId, string? nomeCliente, DateOnly dataRiferimento);
+    /// <summary>Apre una nuova lista su un ombrellone. giorni > 1 imposta DataFine per soggiorni multi-giorno.</summary>
+    Task<Sessione> ApriSessioneAsync(int ombrelloneId, string? nomeCliente, DateOnly dataRiferimento, int giorni = 1);
 
     /// <summary>Apre un conto extra senza ombrellone (ospite volante). Restituisce la sessione creata.</summary>
     Task<Sessione> ApriContoExtraAsync(string? nome, DateOnly dataRiferimento);

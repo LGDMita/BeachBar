@@ -102,6 +102,29 @@ body {
     letter-spacing: 0.3px;
 }
 
+/* ─── Tablet ─────────────────────────────────── */
+
+@media (max-width: 1024px) {
+    :root {
+        --nav-h: 54px;
+        --footer-h: 24px;
+    }
+
+    .belix-logo-img {
+        height: 42px;
+    }
+
+    .belix-nav {
+        padding: 0 12px;
+        gap: 12px;
+    }
+
+    .nav-link {
+        padding: 6px 10px;
+        font-size: 0.85rem;
+    }
+}
+
 /* ─── Mobile ─────────────────────────────────── */
 
 @media (max-width: 600px) {

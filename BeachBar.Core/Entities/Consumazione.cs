@@ -13,5 +13,7 @@ namespace BeachBar.Core.Entities
         public Prodotto Prodotto { get; set; } = null!;
         public int Quantita { get; set; }
         public DateTime Timestamp { get; set; }
+        /// <summary>Giorno in cui il prodotto è stato ordinato (per visualizzazione multi-giorno).</summary>
+        public DateOnly Giorno { get; set; }
     }
 }

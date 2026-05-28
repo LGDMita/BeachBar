@@ -24,6 +24,7 @@
     {
         <div class="sezione-card">
             <h3>Dimensioni griglia</h3>
+            <p class="sezione-desc">Imposta quante righe e colonne ha la mappa della spiaggia. Cambiare le dimensioni azzera le posizioni già assegnate — gli ombrelloni rimangono nel sistema ma vanno riposizionati.</p>
             <div class="form-riga">
                 <label>Righe</label>
                 <input type="number" class="input-numero" @bind="tempRighe" min="1" max="20" />
@@ -55,7 +56,10 @@
 
         <div class="sezione-card sezione-card-mappa">
             <div class="editor-header">
-                <h3 style="margin:0;">Mappa ombrelloni</h3>
+                <div>
+                    <h3 style="margin:0 0 4px;">Mappa ombrelloni</h3>
+                    <p class="sezione-desc" style="margin:0;">Clicca o trascina sulle celle vuote per posizionare gli ombrelloni. Le celle non occupate vengono comunque mostrate sulla dashboard come quadrati grigi, a indicare lo spazio disponibile.</p>
+                </div>
                 <div class="editor-status">
                     <span class="status-chip status-ok">@celleOccupate / @(numRighe * numColonne) celle</span>
                     @if (!modalitaCancella && celleOccupate < numRighe * numColonne)
@@ -84,6 +88,7 @@
             </div>
 
             <div class="editor-outer">
+              <div class="editor-scroll-inner">
                 @* Riga etichette colonne *@
                 <div class="editor-col-header">
                     <div class="editor-corner-spacer"></div>
@@ -168,6 +173,7 @@
                         </div>
                     </div>
                 </div>
+              </div>
             </div>
 
             @if (ombrelloniNonPosizionati.Count > 0)
@@ -206,6 +212,7 @@
     @if (sezione == "prodotti")
     {
         <div class="sezione-card">
+            <p class="sezione-desc">Gestisci il menu del bar. I prodotti appaiono suddivisi per categoria quando lo staff aggiunge consumazioni a un conto. Solo i prodotti segnati come <strong>disponibili</strong> compaiono nella selezione operativa.</p>
             <h3>Categorie</h3>
             <div class="lista-categorie">
                 @foreach (var cat in categorie)
@@ -240,8 +247,11 @@
             <h3>Prodotti</h3>
 
             <div class="form-nuovo-prodotto">
-                <input class="input-testo" placeholder="Nome" @bind="nuovoProdottoNome" />
-                <input type="number" class="input-numero" placeholder="Prezzo" @bind="nuovoProdottoPrezzo" step="0.50" />
+                <input class="input-testo" placeholder="Nome prodotto" @bind="nuovoProdottoNome" />
+                <div class="input-prezzo-wrapper">
+                    <label class="input-prezzo-label">€ Prezzo</label>
+                    <input type="number" class="input-numero" placeholder="0.00" @bind="nuovoProdottoPrezzo" step="0.01" min="0" />
+                </div>
                 <select class="input-select" @bind="nuovoProdottoCategoria">
                     @foreach (var cat in categorie)
                     {
@@ -300,8 +310,9 @@
     @if (sezione == "gestione")
     {
         <div class="sezione-card">
+            <p class="sezione-desc">Operazioni di fine giornata e gestione dell'account.</p>
             <h3>Contatori Dashboard</h3>
-            <p>Azzera i contatori dell'incasso odierno nella dashboard. I dati non verranno cancellati e resteranno consultabili nello storico.</p>
+            <p>Azzera il punto di partenza dei contatori "Totale aperto" e "Incassato oggi" senza toccare i dati. I conti rimangono aperti e lo storico è invariato — utile dopo una cassa intermedia.</p>
 
             @if (!confermaResetVisivo)
             {
@@ -320,7 +331,7 @@
             <hr style="margin: 30px 0;" />
 
             <h3>Reset giornaliero (Forzato)</h3>
-            <p>Chiude tutte le sessioni aperte e libera tutti gli ombrelloni occupati. Usa questa funzione solo a fine giornata.</p>
+            <p>Chiude forzatamente tutte le sessioni ancora aperte e libera gli ombrelloni. Usa questa funzione solo a fine giornata se qualche conto è rimasto aperto per errore.</p>
 
             @if (!confermaReset)
             {

@@ -224,6 +224,50 @@
     padding: 24px 0;
 }
 
+/* ─── Tablet ─────────────────────────────────── */
+
+@media (max-width: 1024px) {
+    .scontrini-container {
+        padding: 14px;
+    }
+
+    .scontrini-header {
+        margin-bottom: 12px;
+    }
+
+    .scontrini-search {
+        padding: 8px 10px;
+        font-size: 0.9rem;
+    }
+
+    .chip {
+        padding: 6px 12px;
+        font-size: 0.82rem;
+    }
+
+    .sort-btn {
+        padding: 6px 10px;
+        font-size: 0.78rem;
+    }
+
+    .sessione-row {
+        padding: 10px 12px;
+        gap: 10px;
+    }
+
+    .sessione-nome {
+        font-size: 0.9rem;
+    }
+
+    .sessione-meta {
+        font-size: 0.75rem;
+    }
+
+    .sessione-importo {
+        font-size: 0.9rem;
+    }
+}
+
 /* ─── Mobile ─────────────────────────────────── */
 
 @media (max-width: 600px) {

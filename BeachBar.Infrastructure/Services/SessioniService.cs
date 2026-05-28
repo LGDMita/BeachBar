@@ -17,10 +17,12 @@ public class SessioniService : ISessioniService
             .OrderBy(o => o.Numero)
             .ToListAsync();
 
-        // Solo sessioni legate a un ombrellone, aperte, per la data richiesta
+        // Sessioni attive per la data: include soggiorni multi-giorno che comprendono questa data
         var sessioniAperte = await _db.Sessioni
             .AsNoTracking()
-            .Where(s => !s.Chiusa && s.OmbrelloneId != null && s.DataRiferimento == data)
+            .Where(s => !s.Chiusa && s.OmbrelloneId != null
+                     && s.DataRiferimento <= data
+                     && (s.DataFine == null || s.DataFine >= data))
             .ToListAsync();
 
         var perOmbrellone = sessioniAperte
@@ -71,7 +73,9 @@ public class SessioniService : ISessioniService
     public async Task<List<Sessione>> GetSessioniAttivePerOmbrelloneAsync(int ombrelloneId, DateOnly data)
         => await _db.Sessioni
             .Include(s => s.Consumazioni).ThenInclude(c => c.Prodotto)
-            .Where(s => s.OmbrelloneId == ombrelloneId && !s.Chiusa && s.DataRiferimento == data)
+            .Where(s => s.OmbrelloneId == ombrelloneId && !s.Chiusa
+                     && s.DataRiferimento <= data
+                     && (s.DataFine == null || s.DataFine >= data))
             .OrderBy(s => s.Apertura)
             .ToListAsync();
 
@@ -95,13 +99,16 @@ public class SessioniService : ISessioniService
             .OrderByDescending(s => s.Chiusura)
             .ToListAsync();
 
-    public async Task<Sessione> ApriSessioneAsync(int ombrelloneId, string? nomeCliente, DateOnly dataRiferimento)
+    public async Task<Sessione> ApriSessioneAsync(int ombrelloneId, string? nomeCliente, DateOnly dataRiferimento, int giorni = 1)
     {
         var ombrellone = await _db.Ombrelloni.FindAsync(ombrelloneId)
             ?? throw new InvalidOperationException($"Ombrellone {ombrelloneId} non trovato.");
 
-        if (dataRiferimento == DateOnly.FromDateTime(DateTime.UtcNow))
+        var oggi = DateOnly.FromDateTime(DateTime.UtcNow);
+        if (dataRiferimento <= oggi && (giorni <= 1 || dataRiferimento.AddDays(giorni - 1) >= oggi))
             ombrellone.Occupato = true;
+
+        var dataFine = giorni > 1 ? dataRiferimento.AddDays(giorni - 1) : (DateOnly?)null;
 
         var nuova = new Sessione
         {
@@ -109,7 +116,8 @@ public class SessioniService : ISessioniService
             NomeCliente = nomeCliente,
             Apertura = DateTime.UtcNow,
             Chiusa = false,
-            DataRiferimento = dataRiferimento
+            DataRiferimento = dataRiferimento,
+            DataFine = dataFine
         };
         _db.Sessioni.Add(nuova);
         await _db.SaveChangesAsync();

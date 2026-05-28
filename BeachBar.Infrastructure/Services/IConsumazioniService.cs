@@ -5,11 +5,10 @@ namespace BeachBar.Infrastructure.Services;
 public interface IConsumazioniService
 {
     /// <summary>
-    /// Aggiunge 1 unità di un prodotto alla sessione.
-    /// Se il prodotto è già presente, incrementa la quantità esistente.
-    /// Usato dal frontend Blazor.
+    /// Aggiunge 1 unità di un prodotto alla sessione per il giorno specificato.
+    /// Se il prodotto esiste già per quel giorno, incrementa la quantità.
     /// </summary>
-    Task AggiungiConsumazione(int sessioneId, int prodottoId);
+    Task AggiungiConsumazione(int sessioneId, int prodottoId, DateOnly giorno);
 
     /// <summary>
     /// Aggiunge una quantità specificata di un prodotto alla sessione.
@@ -18,8 +17,8 @@ public interface IConsumazioniService
     /// </summary>
     Task<Consumazione> AggiungiConsumazioneConQuantitaAsync(int sessioneId, int prodottoId, int quantita);
 
-    /// <summary>Rimuove 1 unità di un prodotto; se la quantità arriva a 0 elimina la riga.</summary>
-    Task RimuoviConsumazione(int sessioneId, int prodottoId);
+    /// <summary>Rimuove 1 unità di un prodotto per il giorno specificato; se la quantità arriva a 0 elimina la riga.</summary>
+    Task RimuoviConsumazione(int sessioneId, int prodottoId, DateOnly giorno);
 
     /// <summary>
     /// Elimina una consumazione per ID diretto.

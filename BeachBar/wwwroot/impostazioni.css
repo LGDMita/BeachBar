@@ -1,3 +1,12 @@
+/* ─── Testo descrittivo sezione ─────────────── */
+
+.sezione-desc {
+    color: #6c757d;
+    font-size: 0.88rem;
+    margin: 0 0 16px;
+    line-height: 1.5;
+}
+
 /* ─── Tab di navigazione sezioni ────────────── */
 
 .tabs-impostazioni {
@@ -156,6 +165,19 @@
     flex-wrap: wrap;
 }
 
+.input-prezzo-wrapper {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+}
+
+.input-prezzo-label {
+    font-size: 0.75rem;
+    font-weight: 600;
+    color: #6c757d;
+    letter-spacing: 0.02em;
+}
+
 /* ─── Bottoni azioni editor ──────────────────── */
 
 .btn-azione {
@@ -277,8 +299,16 @@
 
 /* ── Wrapper con etichette riga/colonna ── */
 
+/* Contenitore scroll orizzontale — include etichette colonne E griglia */
 .editor-outer {
+    overflow-x: auto;
+    overflow-y: visible;
     margin-bottom: 10px;
+}
+
+/* Larghezza naturale (fit-content) per attivare lo scroll sul padre */
+.editor-scroll-inner {
+    width: fit-content;
 }
 
 .editor-col-header {
@@ -340,7 +370,6 @@
 }
 
 .editor-scroll-x {
-    overflow-x: auto;
     padding-bottom: 4px;
 }
 
@@ -348,7 +377,8 @@
 
 .layout-editor {
     user-select: none;
-    touch-action: none; /* Blocca scroll durante il drag su touch */
+    /* touch-action gestito dinamicamente da editor-drag.js:
+       none solo durante il drag, ripristinato al rilascio */
 }
 
 .editor-cell {
@@ -547,6 +577,75 @@
     gap: 10px;
     flex-wrap: wrap;
     margin-top: 4px;
+}
+
+/* ─── Tablet ─────────────────────────────────── */
+
+@media (max-width: 1024px) {
+    .tabs-impostazioni {
+        gap: 6px;
+        margin-bottom: 14px;
+    }
+
+    .tab {
+        padding: 8px 14px;
+        font-size: 0.88rem;
+    }
+
+    .sezione-card-mappa {
+        padding: 12px;
+    }
+
+    .form-riga {
+        margin-bottom: 10px;
+    }
+
+    .form-riga label {
+        width: 140px;
+    }
+
+    .input-numero {
+        padding: 8px;
+        font-size: 0.9rem;
+    }
+
+    .input-testo,
+    .input-select {
+        padding: 8px;
+        font-size: 0.9rem;
+    }
+
+    .btn-salva {
+        padding: 10px 18px;
+        font-size: 0.9rem;
+    }
+
+    .editor-header {
+        margin-bottom: 8px;
+    }
+
+    .editor-toolbar {
+        margin-bottom: 8px;
+    }
+
+    .editor-outer {
+        margin-bottom: 8px;
+    }
+
+    .btn-azione {
+        padding: 8px 14px;
+        font-size: 0.85rem;
+    }
+
+    .pool-info {
+        font-size: 0.8rem;
+        padding: 6px 12px;
+    }
+
+    .sezione-desc {
+        font-size: 0.82rem;
+        margin-bottom: 12px;
+    }
 }
 
 /* ─── Mobile ─────────────────────────────────── */

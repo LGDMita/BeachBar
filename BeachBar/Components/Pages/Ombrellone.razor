@@ -3,58 +3,73 @@
 @inject BeachBar.Infrastructure.Services.ISessioniService Sessioni
 @inject BeachBar.Services.DateContext DateCtx
 @inject NavigationManager Nav
+@using System.Globalization
 
-<div class="dashboard" style="max-width: 600px; margin: 0 auto;">
-    <h2>Ombrellone @Id</h2>
-    <div style="font-size: 0.85rem; color: #6c757d; margin-bottom: 16px;">
-        📅 @DateCtx.DataSelezionata.ToString("dd MMMM yyyy", new System.Globalization.CultureInfo("it-IT"))
-    </div>
+<div class="dashboard ombrellone-pagina">
+    <h2 class="ombrellone-titolo">Ombrellone @Id</h2>
+    <p class="ombrellone-data">📅 @DateCtx.DataSelezionata.ToString("dd MMMM yyyy", new CultureInfo("it-IT"))</p>
 
     @if (errore != null)
     {
-        <div style="background:#f8d7da; color:#721c24; border:1px solid #f5c6cb; padding:10px 14px; border-radius:8px; margin-bottom:12px;">
-            ⚠️ @errore
-        </div>
+        <div class="alert-errore">⚠️ @errore</div>
     }
 
-    @if (ombrelloneValido)
+    @if (ombrelloneValido && sessioni != null)
     {
-        @if (sessioni == null)
+        @if (sessioni.Any())
         {
-            <p>Caricamento...</p>
-        }
-        else
-        {
-            @if (sessioni.Any())
+            <h3 class="ombrellone-sezione">Liste aperte</h3>
+            @foreach (var s in sessioni)
             {
-                <h3 style="margin-bottom: 12px;">Conti aperti</h3>
-                @foreach (var s in sessioni)
-                {
-                    var totale = s.Consumazioni.Sum(c => c.Quantita * c.Prodotto.Prezzo);
-                    <div style="background: white; border-radius: 12px; padding: 16px; margin-bottom: 12px; box-shadow: 0 2px 8px rgba(0,0,0,0.08); display: flex; justify-content: space-between; align-items: center;">
-                        <div>
-                            <div style="font-weight: 600; font-size: 1rem;">@(string.IsNullOrWhiteSpace(s.NomeCliente) ? "Cliente anonimo" : s.NomeCliente)</div>
-                            <div style="font-size: 0.85rem; color: #6c757d; margin-top: 4px;">
-                                @s.Consumazioni.Sum(c => c.Quantita) prodotti · € @totale.ToString("0.00")
-                            </div>
-                        </div>
-                        <button class="btn-apri" @onclick='() => Nav.NavigateTo("/conto/" + s.Id)'
-                                style="padding: 8px 20px; font-size: 0.9rem;">
-                            Gestisci →
-                        </button>
-                    </div>
-                }
-                <hr style="margin: 20px 0;" />
-            }
+                var totale = s.Consumazioni.Sum(c => c.Quantita * c.Prodotto.Prezzo);
+                var nProdotti = s.Consumazioni.Sum(c => c.Quantita);
+                var dataRange = s.DataFine.HasValue
+                    ? $"{s.DataRiferimento?.ToString("dd MMM", new CultureInfo("it-IT"))} – {s.DataFine?.ToString("dd MMM", new CultureInfo("it-IT"))}"
+                    : s.DataRiferimento?.ToString("dd MMMM", new CultureInfo("it-IT"));
 
-            <h3 style="margin-bottom: 12px;">@(sessioni.Any() ? "Apri altro conto" : "Ombrellone libero")</h3>
-            <div class="apri-sessione">
-                <input class="input-nome" placeholder="Nome cliente (opzionale)" @bind="nomeCliente" />
-                <button class="btn-apri" @onclick="ApriSessione">
-                    @(DateCtx.IsOggi ? "Apri sessione" : "Prenota")
-                </button>
-            </div>
+                <div class="lista-card">
+                    <div class="lista-card-info">
+                        <div class="lista-card-nome">@(string.IsNullOrWhiteSpace(s.NomeCliente) ? "Ospite" : s.NomeCliente)</div>
+                        <div class="lista-card-meta">
+                            @dataRange · @nProdotti prodotti · € @totale.ToString("0.00")
+                        </div>
+                    </div>
+                    <button class="btn-lista-apri" @onclick='() => Nav.NavigateTo("/conto/" + s.Id)'>
+                        Gestisci →
+                    </button>
+                </div>
+            }
+            <hr class="ombrellone-hr" />
         }
+
+        <h3 class="ombrellone-sezione">@(sessioni.Any() ? "Nuova lista" : "Ombrellone libero")</h3>
+
+        <div class="nuova-lista-form">
+            <input class="input-nome" placeholder="Nome cliente (opzionale)" @bind="nomeCliente" />
+
+            <div class="giorni-row">
+                <label class="giorni-label">Giorni di soggiorno</label>
+                <input type="number" class="input-giorni" @bind="numGiorni" min="1" max="30" />
+                @if (numGiorni > 1)
+                {
+                    <span class="giorni-hint">
+                        fino al @DateCtx.DataSelezionata.AddDays(numGiorni - 1).ToString("dd MMM", new CultureInfo("it-IT"))
+                    </span>
+                }
+            </div>
+
+            <button class="btn-apri-lista" @onclick="ApriSessione">
+                @(DateCtx.IsOggi ? "Apri lista" : "Prenota")
+            </button>
+        </div>
+
+        <button class="btn-torna-spiaggia" @onclick='() => Nav.NavigateTo("/")'>
+            ← Torna alla spiaggia
+        </button>
+    }
+    else if (ombrelloneValido && sessioni == null)
+    {
+        <p class="caricamento">Caricamento...</p>
     }
 </div>
 
@@ -63,6 +78,7 @@
 
     private List<BeachBar.Core.Entities.Sessione>? sessioni;
     private string? nomeCliente;
+    private int numGiorni = 1;
     private bool ombrelloneValido = true;
     private string? errore;
 
@@ -91,12 +107,12 @@
         errore = null;
         try
         {
-            var nuova = await Sessioni.ApriSessioneAsync(Id, nomeCliente, DateCtx.DataSelezionata);
+            var nuova = await Sessioni.ApriSessioneAsync(Id, nomeCliente, DateCtx.DataSelezionata, numGiorni);
             Nav.NavigateTo("/conto/" + nuova.Id);
         }
         catch (Exception ex)
         {
-            errore = $"Impossibile aprire la sessione: {ex.Message}";
+            errore = $"Impossibile aprire la lista: {ex.Message}";
         }
     }
 }

@@ -14,6 +14,8 @@ namespace BeachBar.Core.Entities
         public DateTime? Chiusura { get; set; }
         public bool Chiusa { get; set; }
         public DateOnly? DataRiferimento { get; set; }
+        /// <summary>Data di fine soggiorno per prenotazioni multi-giorno. Null = giorno singolo.</summary>
+        public DateOnly? DataFine { get; set; }
         public ICollection<Consumazione> Consumazioni { get; set; } = new List<Consumazione>();
 
     }

@@ -23,6 +23,20 @@
     margin-bottom: 32px;
 }
 
+@media (max-width: 1024px) {
+    .storico-container {
+        padding: 14px 16px;
+    }
+
+    .header-storico {
+        margin-bottom: 14px;
+    }
+
+    .titolo-storico {
+        font-size: 18px;
+    }
+}
+
 .titolo-storico {
     font-size: 24px;
     font-weight: 800;

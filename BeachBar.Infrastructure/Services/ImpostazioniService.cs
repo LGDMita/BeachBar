@@ -59,7 +59,7 @@ public class ImpostazioniService : IImpostazioniService
     public async Task<(decimal aperto, decimal incassato, int ombrelloniAttivi)> GetStatisticheAsync(DateOnly data)
     {
         var aperto = await _db.Sessioni
-            .Where(s => !s.Chiusa && s.DataRiferimento == data)
+            .Where(s => !s.Chiusa && s.DataRiferimento <= data && (s.DataFine == null || s.DataFine >= data))
             .SelectMany(s => s.Consumazioni)
             .SumAsync(c => (decimal?)c.Quantita * c.Prodotto.Prezzo) ?? 0;
 
@@ -77,7 +77,9 @@ public class ImpostazioniService : IImpostazioniService
             .SumAsync(c => (decimal?)c.Quantita * c.Prodotto.Prezzo) ?? 0;
 
         var attivi = await _db.Sessioni
-            .CountAsync(s => !s.Chiusa && s.DataRiferimento == data && s.OmbrelloneId != null);
+            .CountAsync(s => !s.Chiusa && s.OmbrelloneId != null
+                          && s.DataRiferimento <= data
+                          && (s.DataFine == null || s.DataFine >= data));
 
         return (aperto, incassato, attivi);
     }

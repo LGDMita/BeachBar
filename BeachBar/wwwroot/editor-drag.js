@@ -30,13 +30,14 @@
     }
 
     function onPointerDown(e) {
-        // Solo tasto sinistro del mouse; touch e penna passano sempre
         if (e.pointerType === 'mouse' && e.button !== 0) return;
         const cell = cellAt(e.clientX, e.clientY);
         if (!cell || !cell.classList.contains('cell-vuota')) return;
         _active = true;
         _visited = [];
         _visitedSet = new Set();
+        // Blocca scroll solo durante il drag attivo
+        if (_el) _el.style.touchAction = 'none';
         tryVisit(e.clientX, e.clientY);
     }
 
@@ -48,7 +49,8 @@
     function onPointerUp() {
         if (!_active) return;
         _active = false;
-        // Informa Blazor solo se è stato un vero drag (più di 1 cella)
+        // Ripristina scroll libero
+        if (_el) _el.style.touchAction = '';
         if (_visited.length > 1 && _dotNet) {
             _dotNet.invokeMethodAsync('CompletaDragJS', _visited);
         }
@@ -68,6 +70,7 @@
         },
         dispose: function () {
             if (_el) {
+                _el.style.touchAction = '';
                 _el.removeEventListener('pointerdown', onPointerDown);
                 _el.removeEventListener('pointermove', onPointerMove);
                 _el.removeEventListener('pointerup', onPointerUp);
