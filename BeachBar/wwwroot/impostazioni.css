@@ -194,13 +194,17 @@
 
 /* ─── Editor mappa ombrelloni ────────────────── */
 
+.sezione-card-mappa {
+    padding: 16px;
+}
+
 .editor-header {
     display: flex;
     align-items: center;
     justify-content: space-between;
     flex-wrap: wrap;
     gap: 10px;
-    margin-bottom: 14px;
+    margin-bottom: 10px;
 }
 
 .editor-status {
@@ -232,7 +236,7 @@
     align-items: center;
     justify-content: space-between;
     gap: 12px;
-    margin-bottom: 14px;
+    margin-bottom: 10px;
     flex-wrap: wrap;
 }
 
@@ -274,7 +278,7 @@
 /* ── Wrapper con etichette riga/colonna ── */
 
 .editor-outer {
-    margin-bottom: 14px;
+    margin-bottom: 10px;
 }
 
 .editor-col-header {
@@ -290,7 +294,7 @@
 }
 
 .editor-label-cell-col {
-    width: 64px;
+    width: 52px;
     text-align: center;
     font-size: 0.62rem;
     color: #bbb;
@@ -300,7 +304,7 @@
 }
 
 .editor-label-gap-h {
-    width: 20px;
+    width: 12px;
     flex-shrink: 0;
 }
 
@@ -319,7 +323,7 @@
 }
 
 .editor-label-cell-row {
-    height: 52px;
+    height: 44px;
     display: flex;
     align-items: center;
     justify-content: center;
@@ -331,7 +335,7 @@
 }
 
 .editor-label-gap-v {
-    height: 20px;
+    height: 12px;
     width: 24px;
 }
 
@@ -344,10 +348,11 @@
 
 .layout-editor {
     user-select: none;
+    touch-action: none; /* Blocca scroll durante il drag su touch */
 }
 
 .editor-cell {
-    border-radius: 8px;
+    border-radius: 6px;
     cursor: pointer;
     display: flex;
     align-items: center;
@@ -355,6 +360,7 @@
     font-weight: bold;
     transition: background 0.12s, transform 0.08s;
     position: relative;
+    overflow: hidden;
 }
 
 .editor-cell:active {
@@ -371,6 +377,13 @@
     background: #e9ecef;
     border-color: #9ca3af;
     color: #6b7280;
+}
+
+/* Anteprima celle selezionate durante il drag */
+.cell-drag {
+    background: #bfdbfe;
+    border: 2px dashed #3b82f6;
+    color: #1d4ed8;
 }
 
 .modalita-cancella .cell-vuota {
@@ -418,7 +431,7 @@
 }
 
 .cell-num {
-    font-size: 1.25rem;
+    font-size: 0.9rem;
     font-weight: 700;
     line-height: 1;
 }
@@ -453,14 +466,14 @@
 }
 
 .editor-sep-v .sep-inner {
-    width: 4px;
+    width: 3px;
     height: 60%;
     border-radius: 2px;
     transition: background 0.18s, height 0.18s;
 }
 
 .editor-sep-h .sep-inner {
-    height: 4px;
+    height: 3px;
     width: 60%;
     border-radius: 2px;
     transition: background 0.18s, width 0.18s;

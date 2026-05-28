@@ -30,6 +30,9 @@ public interface IImpostazioniService
     /// <summary>Assegna il prossimo ombrellone non posizionato alla cella; se non ne esistono, ne crea uno nuovo.</summary>
     Task AssegnaCellaAsync(int cellaIndice);
 
+    /// <summary>Assegna sequenzialmente più celle vuote in un'unica transazione. Usato per il drag nella mappa.</summary>
+    Task AssegnaCelleAsync(IReadOnlyList<int> celleIndici);
+
     /// <summary>Rimuove l'ombrellone dalla cella (CellaIndice → null).</summary>
     Task RimuoviDaCellaAsync(int cellaIndice);
 

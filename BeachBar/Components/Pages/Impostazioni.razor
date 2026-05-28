@@ -1,8 +1,10 @@
 @page "/impostazioni"
 @attribute [Authorize]
+@implements IAsyncDisposable
 @inject BeachBar.Infrastructure.Services.IProdottiService Prodotti
 @inject BeachBar.Infrastructure.Services.ISessioniService Sessioni
 @inject BeachBar.Infrastructure.Services.IImpostazioniService ImpostazioniSvc
+@inject IJSRuntime JS
 
 <div class="dashboard">
     <h1 class="titolo">Impostazioni</h1>
@@ -51,7 +53,7 @@
             }
         </div>
 
-        <div class="sezione-card">
+        <div class="sezione-card sezione-card-mappa">
             <div class="editor-header">
                 <h3 style="margin:0;">Mappa ombrelloni</h3>
                 <div class="editor-status">
@@ -103,7 +105,9 @@
                     </div>
 
                     <div class="editor-scroll-x">
-                        <div class="layout-editor @(modalitaCancella ? "modalita-cancella" : "")" style="@EditorGridStyle">
+                        <div class="layout-editor @(modalitaCancella ? "modalita-cancella" : "")"
+                             style="@EditorGridStyle"
+                             @ref="_editorRef">
                             @for (int r = 0; r < numRighe; r++)
                             {
                                 @for (int c = 0; c < numColonne; c++)
@@ -112,6 +116,7 @@
                                     var omb = idx < celleEditor.Length ? celleEditor[idx] : null;
 
                                     <div class="editor-cell @(omb != null ? "cell-piena" : "cell-vuota")"
+                                         data-cell-idx="@idx"
                                          @onclick="() => GestioneClickCella(idx)"
                                          @oncontextmenu:preventDefault="true"
                                          @oncontextmenu="() => RimuoviDaCellaEditor(idx)"
@@ -371,8 +376,8 @@
 
     private string EditorGridStyle =>
         "display:grid;" +
-        "grid-template-columns:" + string.Join(" ", Enumerable.Range(0, 2 * numColonne - 1).Select(i => i % 2 == 0 ? "64px" : "20px")) + ";" +
-        "grid-template-rows:" + string.Join(" ", Enumerable.Range(0, 2 * numRighe - 1).Select(i => i % 2 == 0 ? "52px" : "20px")) + ";" +
+        "grid-template-columns:" + string.Join(" ", Enumerable.Range(0, 2 * numColonne - 1).Select(i => i % 2 == 0 ? "52px" : "12px")) + ";" +
+        "grid-template-rows:" + string.Join(" ", Enumerable.Range(0, 2 * numRighe - 1).Select(i => i % 2 == 0 ? "44px" : "12px")) + ";" +
         "gap:0;width:fit-content;";
 
     private static HashSet<int> ParseBordi(string? s) =>
@@ -487,6 +492,50 @@
         {
             errore = $"Errore: {ex.Message}";
         }
+    }
+
+    // ── Drag JS (mouse + touch tramite pointer events) ────────────────────
+    private ElementReference _editorRef;
+    private DotNetObjectReference<Impostazioni>? _dotNetRef;
+    private bool _dragJsReady;
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (sezione == "spiaggia" && !_dragJsReady)
+        {
+            _dragJsReady = true;
+            _dotNetRef ??= DotNetObjectReference.Create(this);
+            await JS.InvokeVoidAsync("belix.editorDrag.init", _dotNetRef, _editorRef);
+        }
+        else if (sezione != "spiaggia" && _dragJsReady)
+        {
+            _dragJsReady = false;
+            await JS.InvokeVoidAsync("belix.editorDrag.dispose");
+        }
+    }
+
+    [JSInvokable]
+    public async Task CompletaDragJS(int[] indici)
+    {
+        if (indici.Length == 0) return;
+        errore = null;
+        try
+        {
+            await ImpostazioniSvc.AssegnaCelleAsync(indici);
+            await CaricaLayoutEditor();
+        }
+        catch (Exception ex)
+        {
+            errore = $"Errore: {ex.Message}";
+            await CaricaLayoutEditor();
+        }
+        await InvokeAsync(StateHasChanged);
+    }
+
+    public async ValueTask DisposeAsync()
+    {
+        try { await JS.InvokeVoidAsync("belix.editorDrag.dispose"); } catch { }
+        _dotNetRef?.Dispose();
     }
 
     private async Task GestioneClickCella(int idx)

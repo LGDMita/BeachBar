@@ -68,26 +68,15 @@
                                 <button class="ombrellone @(omb.Occupato ? "occupato" : "libero")"
                                         @onclick="() => Vai(omb)">
                                     <span class="numero">@omb.Numero</span>
-                                    @if (omb.Occupato)
+                                    @if (omb.Occupato && omb.Sessioni.Count > 1)
                                     {
-                                        @if (omb.Sessioni.Count == 1)
-                                        {
-                                            var nome = omb.Sessioni.First().NomeCliente;
-                                            <span class="stato">Occupato</span>
-                                            @if (!string.IsNullOrWhiteSpace(nome))
-                                            {
-                                                <span class="omb-nome">@nome</span>
-                                            }
-                                        }
-                                        else
-                                        {
-                                            <span class="stato">@omb.Sessioni.Count conti</span>
-                                        }
+                                        <span class="stato">@omb.Sessioni.Count conti</span>
                                     }
                                     else
                                     {
-                                        <span class="stato">Libero</span>
+                                        <span class="stato">@(omb.Occupato ? "Occupato" : "Libero")</span>
                                     }
+                                    <span class="omb-nome">@(omb.Sessioni.Count == 1 ? omb.Sessioni.First().NomeCliente : null)</span>
                                 </button>
                             }
                             else
@@ -131,42 +120,18 @@
                     <button class="ombrellone @(o.Occupato ? "occupato" : "libero")"
                             @onclick="() => Vai(o)">
                         <span class="numero">@o.Numero</span>
-                        @if (o.Occupato)
+                        @if (o.Occupato && o.Sessioni.Count > 1)
                         {
-                            @if (o.Sessioni.Count == 1)
-                            {
-                                var nome = o.Sessioni.First().NomeCliente;
-                                <span class="stato">Occupato</span>
-                                @if (!string.IsNullOrWhiteSpace(nome))
-                                {
-                                    <span class="omb-nome">@nome</span>
-                                }
-                            }
-                            else
-                            {
-                                <span class="stato">@o.Sessioni.Count conti</span>
-                            }
+                            <span class="stato">@o.Sessioni.Count conti</span>
                         }
                         else
                         {
-                            <span class="stato">Libero</span>
+                            <span class="stato">@(o.Occupato ? "Occupato" : "Libero")</span>
                         }
+                        <span class="omb-nome">@(o.Sessioni.Count == 1 ? o.Sessioni.First().NomeCliente : null)</span>
                     </button>
                 }
             </div>
-        </div>
-    }
-
-    @if (ombrelloniNonInGriglia.Count > 0)
-    {
-        <div class="avviso-griglia-parziale">
-            <span>
-                @ombrelloniNonInGriglia.Count
-                @(ombrelloniNonInGriglia.Count == 1 ? "ombrellone non visibile" : "ombrelloni non visibili")
-                nella griglia
-                (@string.Join(", ", ombrelloniNonInGriglia.Take(5).Select(o => "#" + o.Numero))@(ombrelloniNonInGriglia.Count > 5 ? "..." : ""))
-            </span>
-            <a href="/impostazioni">Posiziona nella mappa →</a>
         </div>
     }
 
@@ -256,8 +221,6 @@
     private string? nomeContoExtra;
     private string? ombrelloneExtraStr;
 
-    private List<BeachBar.Core.Entities.Ombrellone> ombrelloniNonInGriglia = new();
-
     private static HashSet<int> ParseBordi(string? s) =>
         s == null
             ? new()
@@ -301,11 +264,6 @@
                     int ci = o.CellaIndice!.Value;
                     if (ci < celleGrid.Length) celleGrid[ci] = o;
                 }
-                ombrelloniNonInGriglia = ombrelloni.Where(o => !o.CellaIndice.HasValue).ToList();
-            }
-            else
-            {
-                ombrelloniNonInGriglia = new();
             }
 
             if (!usaLayoutCustom && hasBordi)

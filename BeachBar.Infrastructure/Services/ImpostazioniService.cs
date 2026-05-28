@@ -149,6 +149,48 @@ public class ImpostazioniService : IImpostazioniService
         await _db.SaveChangesAsync();
     }
 
+    public async Task AssegnaCelleAsync(IReadOnlyList<int> celleIndici)
+    {
+        if (celleIndici.Count == 0) return;
+
+        var occupate = (await _db.Ombrelloni
+            .Where(o => o.CellaIndice != null)
+            .Select(o => o.CellaIndice!.Value)
+            .ToListAsync())
+            .ToHashSet();
+
+        var daPosizionare = celleIndici
+            .Distinct()
+            .Where(idx => !occupate.Contains(idx))
+            .ToList();
+
+        if (daPosizionare.Count == 0) return;
+
+        var nonPosizionati = await _db.Ombrelloni
+            .Where(o => o.CellaIndice == null)
+            .OrderBy(o => o.Numero)
+            .ToListAsync();
+
+        var maxNum = await _db.Ombrelloni.MaxAsync(o => (int?)o.Numero) ?? 0;
+
+        for (int i = 0; i < daPosizionare.Count; i++)
+        {
+            Ombrellone omb;
+            if (i < nonPosizionati.Count)
+            {
+                omb = nonPosizionati[i];
+            }
+            else
+            {
+                omb = new Ombrellone { Numero = ++maxNum, Occupato = false };
+                _db.Ombrelloni.Add(omb);
+            }
+            omb.CellaIndice = daPosizionare[i];
+        }
+
+        await _db.SaveChangesAsync();
+    }
+
     public async Task RimuoviDaCellaAsync(int cellaIndice)
     {
         var omb = await _db.Ombrelloni.FirstOrDefaultAsync(o => o.CellaIndice == cellaIndice);
