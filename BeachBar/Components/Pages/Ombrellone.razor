@@ -42,7 +42,36 @@
             <hr class="ombrellone-hr" />
         }
 
-        <h3 class="ombrellone-sezione">@(sessioni.Any() ? "Nuova lista" : "Ombrellone libero")</h3>
+        @if (ombrellone!.Occupato && !sessioni.Any() && DateCtx.IsOggi)
+        {
+            <h3 class="ombrellone-sezione">Occupato senza lista</h3>
+            <p style="color:#856404; font-size:0.9rem; margin-bottom:16px;">
+                Il cliente è presente ma non ha una lista aperta.
+            </p>
+            @if (!mostraConfermaLibera)
+            {
+                <button class="btn-libera-spiaggia" @onclick="() => mostraConfermaLibera = true">
+                    Libera ombrellone
+                </button>
+            }
+            else
+            {
+                <div style="background:#fff3cd; padding:12px; border-radius:10px; text-align:center; margin-bottom:4px;">
+                    <p style="margin-bottom:8px; color:#856404; font-weight:bold; font-size:0.9rem;">Il cliente non tornerà più?</p>
+                    <div style="display:flex; gap:8px;">
+                        <button @onclick="LiberaOmbrellone" style="flex:1; background:#fd7e14; color:white; border:none; padding:9px; border-radius:8px; font-size:0.88rem;">Sì, libera</button>
+                        <button @onclick="() => mostraConfermaLibera = false" style="flex:1; background:#6c757d; color:white; border:none; padding:9px; border-radius:8px; font-size:0.88rem;">No</button>
+                    </div>
+                </div>
+            }
+            <hr class="ombrellone-hr" />
+        }
+
+        <h3 class="ombrellone-sezione">
+            @if (sessioni.Any()) { <text>Nuova lista</text> }
+            else if (!ombrellone!.Occupato) { <text>Ombrellone libero</text> }
+            else { <text>Apri lista</text> }
+        </h3>
 
         <div class="nuova-lista-form">
             <input class="input-nome" placeholder="Nome cliente (opzionale)" @bind="nomeCliente" />
@@ -76,17 +105,19 @@
 @code {
     [Parameter] public int Id { get; set; }
 
+    private BeachBar.Core.Entities.Ombrellone? ombrellone;
     private List<BeachBar.Core.Entities.Sessione>? sessioni;
     private string? nomeCliente;
     private int numGiorni = 1;
     private bool ombrelloneValido = true;
+    private bool mostraConfermaLibera;
     private string? errore;
 
     protected override async Task OnInitializedAsync()
     {
         try
         {
-            var ombrellone = await Sessioni.GetOmbrelloneByIdAsync(Id);
+            ombrellone = await Sessioni.GetOmbrelloneByIdAsync(Id);
             if (ombrellone == null)
             {
                 ombrelloneValido = false;
@@ -114,5 +145,12 @@
         {
             errore = $"Impossibile aprire la lista: {ex.Message}";
         }
+    }
+
+    private async Task LiberaOmbrellone()
+    {
+        errore = null;
+        try { await Sessioni.LiberaOmbrelloneAsync(Id); Nav.NavigateTo("/"); }
+        catch (Exception ex) { errore = $"Impossibile liberare l'ombrellone: {ex.Message}"; }
     }
 }

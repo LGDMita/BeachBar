@@ -76,10 +76,20 @@ public class ImpostazioniService : IImpostazioniService
             .SelectMany(s => s.Consumazioni)
             .SumAsync(c => (decimal?)c.Quantita * c.Prodotto.Prezzo) ?? 0;
 
-        var attivi = await _db.Sessioni
-            .CountAsync(s => !s.Chiusa && s.OmbrelloneId != null
-                          && s.DataRiferimento <= data
-                          && (s.DataFine == null || s.DataFine >= data));
+        int attivi;
+        if (data == oggi)
+        {
+            // Per oggi: conta gli ombrelloni Occupati (con lista aperta o senza)
+            attivi = await _db.Ombrelloni.CountAsync(o => o.Occupato);
+        }
+        else
+        {
+            // Per altre date: conta le sessioni attive (il flag Occupato riflette solo oggi)
+            attivi = await _db.Sessioni
+                .CountAsync(s => !s.Chiusa && s.OmbrelloneId != null
+                              && s.DataRiferimento <= data
+                              && (s.DataFine == null || s.DataFine >= data));
+        }
 
         return (aperto, incassato, attivi);
     }

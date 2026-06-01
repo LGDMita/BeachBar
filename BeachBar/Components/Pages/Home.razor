@@ -65,16 +65,22 @@
 
                             @if (omb != null)
                             {
-                                <button class="ombrellone @(omb.Occupato ? "occupato" : "libero")"
-                                        @onclick="() => Vai(omb)">
+                                var cssOmb = omb.Occupato
+                                    ? (omb.Sessioni.Any() ? "occupato" : "occupato-senza-lista")
+                                    : "libero";
+                                <button class="ombrellone @cssOmb" @onclick="() => Vai(omb)">
                                     <span class="numero">@omb.Numero</span>
-                                    @if (omb.Occupato && omb.Sessioni.Count > 1)
+                                    @if (omb.Sessioni.Count > 1)
                                     {
                                         <span class="stato">@omb.Sessioni.Count conti</span>
                                     }
+                                    else if (omb.Occupato && !omb.Sessioni.Any())
+                                    {
+                                        <span class="stato">Senza lista</span>
+                                    }
                                     else
                                     {
-                                        <span class="stato">@(omb.Occupato ? "Occupato" : "Libero")</span>
+                                        <span class="stato">@(omb.Occupato ? "Con lista" : "Libero")</span>
                                     }
                                     <span class="omb-nome">@(omb.Sessioni.Count == 1 ? omb.Sessioni.First().NomeCliente : null)</span>
                                 </button>
@@ -117,16 +123,22 @@
             <div class="griglia" style="grid-template-columns: repeat(@colonne, 88px);">
                 @foreach (var o in ombrelloni)
                 {
-                    <button class="ombrellone @(o.Occupato ? "occupato" : "libero")"
-                            @onclick="() => Vai(o)">
+                    var cssO = o.Occupato
+                        ? (o.Sessioni.Any() ? "occupato" : "occupato-senza-lista")
+                        : "libero";
+                    <button class="ombrellone @cssO" @onclick="() => Vai(o)">
                         <span class="numero">@o.Numero</span>
-                        @if (o.Occupato && o.Sessioni.Count > 1)
+                        @if (o.Sessioni.Count > 1)
                         {
                             <span class="stato">@o.Sessioni.Count conti</span>
                         }
+                        else if (o.Occupato && !o.Sessioni.Any())
+                        {
+                            <span class="stato">Senza lista</span>
+                        }
                         else
                         {
-                            <span class="stato">@(o.Occupato ? "Occupato" : "Libero")</span>
+                            <span class="stato">@(o.Occupato ? "Con lista" : "Libero")</span>
                         }
                         <span class="omb-nome">@(o.Sessioni.Count == 1 ? o.Sessioni.First().NomeCliente : null)</span>
                     </button>

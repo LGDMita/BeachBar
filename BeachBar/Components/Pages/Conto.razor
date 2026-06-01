@@ -147,7 +147,16 @@
                 </button>
                 @if (!mostraConfermaAnnulla)
                 {
-                    <button class="btn-chiudi" @onclick="ChiudiSessione">Chiudi e incassa</button>
+                    @if (sessione.OmbrelloneId.HasValue)
+                    {
+                        <button class="btn-chiudi" @onclick='() => ChiudiSessione(true)'>Chiudi ombrellone</button>
+                        <button class="btn-chiudi-lista" @onclick='() => ChiudiSessione(false)'>Chiudi lista</button>
+                        <p class="hint-chiudi-lista">↑ "Chiudi lista" se il cliente torna domani</p>
+                    }
+                    else
+                    {
+                        <button class="btn-chiudi" @onclick='() => ChiudiSessione(false)'>Chiudi e incassa</button>
+                    }
                     <button class="btn-annulla" @onclick="() => mostraConfermaAnnulla = true"
                             style="background-color: #f8d7da; color: #721c24;">
                         Annulla lista
@@ -231,10 +240,10 @@
         catch (Exception ex) { errore = $"Impossibile rimuovere il prodotto: {ex.Message}"; }
     }
 
-    private async Task ChiudiSessione()
+    private async Task ChiudiSessione(bool liberaOmbrellone)
     {
         errore = null;
-        try { await Sessioni.ChiudiSessioneAsync(sessione!.Id); Nav.NavigateTo("/"); }
+        try { await Sessioni.ChiudiSessioneAsync(sessione!.Id, liberaOmbrellone); Nav.NavigateTo("/"); }
         catch (Exception ex) { errore = $"Impossibile chiudere la lista: {ex.Message}"; }
     }
 

@@ -29,6 +29,7 @@ public class SessioniService : ISessioniService
             .GroupBy(s => s.OmbrelloneId!.Value)
             .ToDictionary(g => g.Key, g => g.ToList());
 
+        var oggi = DateOnly.FromDateTime(DateTime.UtcNow);
         foreach (var o in ombrelloni)
         {
             if (perOmbrellone.TryGetValue(o.Id, out var sessioni))
@@ -38,7 +39,10 @@ public class SessioniService : ISessioniService
             }
             else
             {
-                o.Occupato = false;
+                // Per date diverse da oggi: nessuna sessione = libero.
+                // Per oggi: preserva il flag DB — il cliente può essere "senza lista" (occupato ma senza conto aperto).
+                if (data != oggi)
+                    o.Occupato = false;
                 o.Sessioni = new List<Sessione>();
             }
         }
@@ -144,7 +148,7 @@ public class SessioniService : ISessioniService
         return nuova;
     }
 
-    public async Task ChiudiSessioneAsync(int sessioneId)
+    public async Task ChiudiSessioneAsync(int sessioneId, bool liberaOmbrellone = false)
     {
         var sessione = await _db.Sessioni
             .Include(s => s.Ombrellone)
@@ -154,8 +158,7 @@ public class SessioniService : ISessioniService
         sessione.Chiusa = true;
         sessione.Chiusura = DateTime.UtcNow;
 
-        // Libera il flag Occupato solo se è oggi e non ci sono altre sessioni aperte sullo stesso ombrellone
-        if (sessione.OmbrelloneId.HasValue && sessione.DataRiferimento == DateOnly.FromDateTime(DateTime.UtcNow))
+        if (liberaOmbrellone && sessione.OmbrelloneId.HasValue)
         {
             var altreAperte = await _db.Sessioni.AnyAsync(s =>
                 s.OmbrelloneId == sessione.OmbrelloneId && !s.Chiusa && s.Id != sessioneId);
@@ -173,17 +176,29 @@ public class SessioniService : ISessioniService
             .FirstOrDefaultAsync(s => s.Id == sessioneId)
             ?? throw new InvalidOperationException($"Sessione {sessioneId} non trovata.");
 
-        bool eraOggi = sessione.DataRiferimento == DateOnly.FromDateTime(DateTime.UtcNow);
+        var oggi = DateOnly.FromDateTime(DateTime.UtcNow);
+        // "Affetta oggi" = la sessione è attiva nel giorno corrente (gestisce sia singolo che multi-giorno)
+        bool affettaOggi = sessione.DataRiferimento <= oggi
+                        && (sessione.DataFine == null || sessione.DataFine >= oggi);
+
         int? ombrelloneId = sessione.OmbrelloneId;
         var ombrellone = sessione.Ombrellone;
 
-        // Controlla prima della rimozione se ci sono altre sessioni aperte (esclusa questa)
         bool liberaOmbrellone = false;
-        if (ombrelloneId.HasValue && eraOggi)
+        if (ombrelloneId.HasValue && affettaOggi)
         {
             var altreAperte = await _db.Sessioni.AnyAsync(s =>
                 s.OmbrelloneId == ombrelloneId && !s.Chiusa && s.Id != sessioneId);
-            liberaOmbrellone = !altreAperte;
+            if (!altreAperte)
+            {
+                // Non liberare se esistono sessioni chiuse oggi: il cliente aveva già usato
+                // "Chiudi lista" e l'ombrellone deve restare occupato (cliente presente senza conto).
+                var altreChiuseOggi = await _db.Sessioni.AnyAsync(s =>
+                    s.OmbrelloneId == ombrelloneId && s.Chiusa
+                    && s.DataRiferimento == oggi
+                    && s.Id != sessioneId);
+                liberaOmbrellone = !altreChiuseOggi;
+            }
         }
 
         if (liberaOmbrellone && ombrellone != null)
@@ -211,21 +226,32 @@ public class SessioniService : ISessioniService
         await _db.SaveChangesAsync();
     }
 
+    public async Task LiberaOmbrelloneAsync(int ombrelloneId)
+    {
+        var o = await _db.Ombrelloni.FindAsync(ombrelloneId)
+            ?? throw new InvalidOperationException($"Ombrellone {ombrelloneId} non trovato.");
+        o.Occupato = false;
+        await _db.SaveChangesAsync();
+    }
+
     public async Task ResetTotaliAsync()
     {
         var sessioniAperte = await _db.Sessioni
-            .Include(s => s.Ombrellone)
             .Where(s => !s.Chiusa)
             .ToListAsync();
 
-        var oggi = DateOnly.FromDateTime(DateTime.UtcNow);
+        var chiusura = DateTime.UtcNow;
         foreach (var s in sessioniAperte)
         {
             s.Chiusa = true;
-            s.Chiusura = DateTime.UtcNow;
-            if (s.OmbrelloneId.HasValue && s.DataRiferimento == oggi)
-                s.Ombrellone!.Occupato = false;
+            s.Chiusura = chiusura;
         }
+
+        var ombrelloniOccupati = await _db.Ombrelloni
+            .Where(o => o.Occupato)
+            .ToListAsync();
+        foreach (var o in ombrelloniOccupati)
+            o.Occupato = false;
 
         await _db.SaveChangesAsync();
     }

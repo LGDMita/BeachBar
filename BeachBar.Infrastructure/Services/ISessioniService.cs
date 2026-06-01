@@ -37,12 +37,20 @@ public interface ISessioniService
     /// <summary>Apre un conto extra senza ombrellone (ospite volante). Restituisce la sessione creata.</summary>
     Task<Sessione> ApriContoExtraAsync(string? nome, DateOnly dataRiferimento);
 
-    /// <summary>Chiude la sessione, registra la data di chiusura e libera l'ombrellone se non ha altre sessioni aperte oggi.</summary>
-    Task ChiudiSessioneAsync(int sessioneId);
+    /// <summary>
+    /// Chiude la sessione e registra la data di chiusura.
+    /// Se <paramref name="liberaOmbrellone"/> è true, imposta Occupato=false sull'ombrellone
+    /// (solo se non ci sono altre sessioni aperte). Se false, l'ombrellone resta occupato
+    /// anche senza sessioni aperte — utile per clienti fissi che pagano ogni giorno.
+    /// </summary>
+    Task ChiudiSessioneAsync(int sessioneId, bool liberaOmbrellone = false);
 
     Task AnnullaSessioneAsync(int sessioneId);
     Task AggiornaNomeSessioneAsync(int sessioneId, string? nuovoNome);
     Task EliminaSessioneStoricoAsync(int id);
+
+    /// <summary>Libera manualmente l'ombrellone (Occupato=false) senza sessioni da chiudere. Usato dalla pagina Ombrellone per ombrelloni "senza lista".</summary>
+    Task LiberaOmbrelloneAsync(int ombrelloneId);
 
     /// <summary>Chiude forzatamente tutte le sessioni aperte. Usato per il reset giornaliero.</summary>
     Task ResetTotaliAsync();

@@ -139,7 +139,7 @@ public class SessioniController : ControllerBase
             if (sessione.Chiusa)
                 return Conflict("La sessione è già chiusa");
 
-            await _sessioni.ChiudiSessioneAsync(id);
+            await _sessioni.ChiudiSessioneAsync(id, liberaOmbrellone: true);
 
             var sessioneChiusa = await _sessioni.GetSessioneByIdAsync(id);
             return Ok(SessioneDto.FromEntity(sessioneChiusa!));

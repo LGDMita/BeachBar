@@ -99,6 +99,11 @@
     color: #721c24;
 }
 
+.occupato-senza-lista {
+    background-color: #fff3cd;
+    color: #856404;
+}
+
 /* ─── Griglia ombrelloni (layout con bordi/custom) */
 
 .griglia-custom {
