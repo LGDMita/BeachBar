@@ -214,7 +214,7 @@
         @* ── Gestione categorie ── *@
         <div class="sezione-card">
             <h3>Categorie</h3>
-            <p class="sezione-desc">Rinomina o elimina le categorie. Eliminare una categoria rimuove anche tutti i prodotti al suo interno.</p>
+            <p class="sezione-desc">Aggiungi, rinomina o elimina le categorie. Eliminare una categoria rimuove anche tutti i prodotti al suo interno.</p>
             <div class="lista-categorie">
                 @foreach (var cat in categorie)
                 {
@@ -233,6 +233,10 @@
                         }
                     </div>
                 }
+                <div class="riga-categoria riga-nuova-categoria">
+                    <input class="input-inline" placeholder="Nuova categoria..." @bind="nuovaCategoriaInput" @onkeydown="NuovaCategoriaKeyDown" />
+                    <button class="btn-sm btn-ok" @onclick="AggiungiCategoria">+</button>
+                </div>
             </div>
             @if (confermaCancellaCategoria != null)
             {
@@ -456,6 +460,7 @@
     private string filtroCat = "";
     private string? categoriaInModifica;
     private string? nuovoNomeCategoria;
+    private string nuovaCategoriaInput = "";
     private string? confermaCancellaCategoria;
     private string nuovoProdottoNome = "";
     private decimal nuovoProdottoPrezzo;
@@ -713,6 +718,20 @@
     {
         prodottiLista = await Prodotti.GetTuttiProdottiAsync();
         categorie = await Prodotti.GetCategorieAsync();
+    }
+
+    private void AggiungiCategoria()
+    {
+        var nome = nuovaCategoriaInput.Trim();
+        if (string.IsNullOrEmpty(nome) || categorie.Contains(nome, StringComparer.OrdinalIgnoreCase)) return;
+        categorie.Add(nome);
+        nuovoProdottoCategoria = nome;
+        nuovaCategoriaInput = "";
+    }
+
+    private void NuovaCategoriaKeyDown(KeyboardEventArgs e)
+    {
+        if (e.Key == "Enter") AggiungiCategoria();
     }
 
     private void ModificaCategoria(string cat) { categoriaInModifica = cat; nuovoNomeCategoria = cat; }
