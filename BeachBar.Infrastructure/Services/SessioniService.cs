@@ -29,7 +29,7 @@ public class SessioniService : ISessioniService
             .GroupBy(s => s.OmbrelloneId!.Value)
             .ToDictionary(g => g.Key, g => g.ToList());
 
-        var oggi = DateOnly.FromDateTime(DateTime.UtcNow);
+        var oggi = DateOnly.FromDateTime(DateTime.Today);
         foreach (var o in ombrelloni)
         {
             if (perOmbrellone.TryGetValue(o.Id, out var sessioni))
@@ -40,10 +40,41 @@ public class SessioniService : ISessioniService
             else
             {
                 // Per date diverse da oggi: nessuna sessione = libero.
-                // Per oggi: preserva il flag DB — il cliente può essere "senza lista" (occupato ma senza conto aperto).
+                // Per oggi: preserva il flag DB — il cliente può essere "senza lista".
                 if (data != oggi)
                     o.Occupato = false;
                 o.Sessioni = new List<Sessione>();
+            }
+        }
+
+        // Per gli ombrelloni "senza lista" di oggi, carica il nome dal conto chiuso più recente
+        // così il nome del cliente rimane visibile in dashboard anche dopo "Chiudi lista e incassa".
+        if (data == oggi)
+        {
+            var senzaListaIds = ombrelloni
+                .Where(o => o.Occupato && !perOmbrellone.ContainsKey(o.Id))
+                .Select(o => o.Id)
+                .ToList();
+
+            if (senzaListaIds.Any())
+            {
+                var sessioniChiuseOggi = await _db.Sessioni
+                    .AsNoTracking()
+                    .Where(s => s.OmbrelloneId != null
+                             && senzaListaIds.Contains(s.OmbrelloneId!.Value)
+                             && s.Chiusa
+                             && s.DataRiferimento == oggi)
+                    .OrderByDescending(s => s.Chiusura)
+                    .Select(s => new { s.OmbrelloneId, s.NomeCliente })
+                    .ToListAsync();
+
+                var nomiPerOmbrellone = sessioniChiuseOggi
+                    .GroupBy(s => s.OmbrelloneId!.Value)
+                    .ToDictionary(g => g.Key, g => g.First().NomeCliente);
+
+                foreach (var o in ombrelloni)
+                    if (nomiPerOmbrellone.TryGetValue(o.Id, out var nome))
+                        o.NomeClienteAttivo = nome;
             }
         }
 
@@ -88,6 +119,20 @@ public class SessioniService : ISessioniService
             .Include(s => s.Consumazioni).ThenInclude(c => c.Prodotto)
             .FirstOrDefaultAsync(s => s.OmbrelloneId == ombrelloneId && !s.Chiusa && s.DataRiferimento == data);
 
+    public async Task<HashSet<int>> GetUmbrelleConProdottiAsync(DateOnly data)
+    {
+        var ids = await _db.Sessioni
+            .AsNoTracking()
+            .Where(s => !s.Chiusa && s.OmbrelloneId != null
+                     && s.DataRiferimento <= data
+                     && (s.DataFine == null || s.DataFine >= data)
+                     && s.Consumazioni.Any())
+            .Select(s => s.OmbrelloneId!.Value)
+            .Distinct()
+            .ToListAsync();
+        return new HashSet<int>(ids);
+    }
+
     public async Task<List<Sessione>> GetContiExtraAsync(DateOnly data)
         => await _db.Sessioni
             .Include(s => s.Consumazioni).ThenInclude(c => c.Prodotto)
@@ -108,7 +153,7 @@ public class SessioniService : ISessioniService
         var ombrellone = await _db.Ombrelloni.FindAsync(ombrelloneId)
             ?? throw new InvalidOperationException($"Ombrellone {ombrelloneId} non trovato.");
 
-        var oggi = DateOnly.FromDateTime(DateTime.UtcNow);
+        var oggi = DateOnly.FromDateTime(DateTime.Today);
         if (dataRiferimento <= oggi && (giorni <= 1 || dataRiferimento.AddDays(giorni - 1) >= oggi))
             ombrellone.Occupato = true;
 
@@ -176,7 +221,7 @@ public class SessioniService : ISessioniService
             .FirstOrDefaultAsync(s => s.Id == sessioneId)
             ?? throw new InvalidOperationException($"Sessione {sessioneId} non trovata.");
 
-        var oggi = DateOnly.FromDateTime(DateTime.UtcNow);
+        var oggi = DateOnly.FromDateTime(DateTime.Today);
         // "Affetta oggi" = la sessione è attiva nel giorno corrente (gestisce sia singolo che multi-giorno)
         bool affettaOggi = sessione.DataRiferimento <= oggi
                         && (sessione.DataFine == null || sessione.DataFine >= oggi);

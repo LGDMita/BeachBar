@@ -35,7 +35,7 @@ public class ConsumazioniService : IConsumazioniService
         var consumazione = await _db.Consumazioni
             .FirstOrDefaultAsync(c => c.SessioneId == sessioneId && c.ProdottoId == prodottoId);
 
-        var oggi = DateOnly.FromDateTime(DateTime.UtcNow);
+        var oggi = DateOnly.FromDateTime(DateTime.Today);
         if (consumazione != null)
         {
             consumazione.Quantita += quantita;

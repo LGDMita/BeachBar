@@ -63,7 +63,7 @@ public class ImpostazioniService : IImpostazioniService
             .SelectMany(s => s.Consumazioni)
             .SumAsync(c => (decimal?)c.Quantita * c.Prodotto.Prezzo) ?? 0;
 
-        var oggi = DateOnly.FromDateTime(DateTime.UtcNow);
+        var oggi = DateOnly.FromDateTime(DateTime.Today);
         IQueryable<Sessione> chiuseQuery = _db.Sessioni.Where(s => s.Chiusa && s.DataRiferimento == data);
         if (data == oggi)
         {

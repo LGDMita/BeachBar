@@ -28,6 +28,9 @@ public interface ISessioniService
     /// <summary>Restituisce tutte le sessioni aperte senza ombrellone (conti extra/volanti) per la data specificata.</summary>
     Task<List<Sessione>> GetContiExtraAsync(DateOnly data);
 
+    /// <summary>Restituisce gli ID degli ombrelloni che hanno almeno una consumazione su una sessione aperta per la data specificata. Usato per distinguere "con lista" (rosso) da "senza lista" (giallo).</summary>
+    Task<HashSet<int>> GetUmbrelleConProdottiAsync(DateOnly data);
+
     /// <summary>Restituisce lo storico delle sessioni chiuse per la data specificata, dalla più recente.</summary>
     Task<List<Sessione>> GetStoricoSessioniAsync(DateOnly filtroData);
 

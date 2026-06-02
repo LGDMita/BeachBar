@@ -65,24 +65,27 @@
 
                             @if (omb != null)
                             {
-                                var cssOmb = omb.Occupato
-                                    ? (omb.Sessioni.Any() ? "occupato" : "occupato-senza-lista")
-                                    : "libero";
+                                var haLista = umbrelleConProdotti.Contains(omb.Id);
+                                var cssOmb = omb.Occupato ? (haLista ? "occupato" : "occupato-senza-lista") : "libero";
                                 <button class="ombrellone @cssOmb" @onclick="() => Vai(omb)">
                                     <span class="numero">@omb.Numero</span>
                                     @if (omb.Sessioni.Count > 1)
                                     {
                                         <span class="stato">@omb.Sessioni.Count conti</span>
                                     }
-                                    else if (omb.Occupato && !omb.Sessioni.Any())
+                                    else if (haLista)
+                                    {
+                                        <span class="stato">Con lista</span>
+                                    }
+                                    else if (omb.Occupato)
                                     {
                                         <span class="stato">Senza lista</span>
                                     }
                                     else
                                     {
-                                        <span class="stato">@(omb.Occupato ? "Con lista" : "Libero")</span>
+                                        <span class="stato">Libero</span>
                                     }
-                                    <span class="omb-nome">@(omb.Sessioni.Count == 1 ? omb.Sessioni.First().NomeCliente : null)</span>
+                                    <span class="omb-nome">@(omb.Sessioni.Count == 1 ? omb.Sessioni.First().NomeCliente : omb.NomeClienteAttivo)</span>
                                 </button>
                             }
                             else
@@ -123,22 +126,25 @@
             <div class="griglia" style="grid-template-columns: repeat(@colonne, 88px);">
                 @foreach (var o in ombrelloni)
                 {
-                    var cssO = o.Occupato
-                        ? (o.Sessioni.Any() ? "occupato" : "occupato-senza-lista")
-                        : "libero";
+                    var haLista = umbrelleConProdotti.Contains(o.Id);
+                    var cssO = o.Occupato ? (haLista ? "occupato" : "occupato-senza-lista") : "libero";
                     <button class="ombrellone @cssO" @onclick="() => Vai(o)">
                         <span class="numero">@o.Numero</span>
                         @if (o.Sessioni.Count > 1)
                         {
                             <span class="stato">@o.Sessioni.Count conti</span>
                         }
-                        else if (o.Occupato && !o.Sessioni.Any())
+                        else if (haLista)
+                        {
+                            <span class="stato">Con lista</span>
+                        }
+                        else if (o.Occupato)
                         {
                             <span class="stato">Senza lista</span>
                         }
                         else
                         {
-                            <span class="stato">@(o.Occupato ? "Con lista" : "Libero")</span>
+                            <span class="stato">Libero</span>
                         }
                         <span class="omb-nome">@(o.Sessioni.Count == 1 ? o.Sessioni.First().NomeCliente : null)</span>
                     </button>
@@ -228,6 +234,7 @@
     private BeachBar.Core.Entities.Ombrellone?[] celleGrid = Array.Empty<BeachBar.Core.Entities.Ombrellone?>();
     private HashSet<int> bordiV = new();
     private HashSet<int> bordiH = new();
+    private HashSet<int> umbrelleConProdotti = new();
     private string? errore;
     private bool mostraNuovoContoExtra;
     private string? nomeContoExtra;
@@ -250,9 +257,11 @@
         contiExtra = null;
         try
         {
-            ombrelloni = await Sessioni.GetOmbrelloniAsync(DateCtx.DataSelezionata);
-            contiExtra = await Sessioni.GetContiExtraAsync(DateCtx.DataSelezionata);
-            var stats = await Impostazioni.GetStatisticheAsync(DateCtx.DataSelezionata);
+            var data = DateCtx.DataSelezionata;
+            ombrelloni = await Sessioni.GetOmbrelloniAsync(data);
+            contiExtra = await Sessioni.GetContiExtraAsync(data);
+            umbrelleConProdotti = await Sessioni.GetUmbrelleConProdottiAsync(data);
+            var stats = await Impostazioni.GetStatisticheAsync(data);
             aperto = stats.aperto;
             incassato = stats.incassato;
             ombrelloniAttivi = stats.ombrelloniAttivi;
