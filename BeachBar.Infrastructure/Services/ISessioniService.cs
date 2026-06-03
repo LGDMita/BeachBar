@@ -57,4 +57,7 @@ public interface ISessioniService
 
     /// <summary>Chiude forzatamente tutte le sessioni aperte. Usato per il reset giornaliero.</summary>
     Task ResetTotaliAsync();
+
+    /// <summary>Restituisce i giorni già coperti da una sessione aperta sull'ombrellone nell'intervallo [dal, al].</summary>
+    Task<HashSet<DateOnly>> GetGiorniOccupatiAsync(int ombrelloneId, DateOnly dal, DateOnly al);
 }

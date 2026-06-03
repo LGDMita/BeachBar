@@ -300,4 +300,26 @@ public class SessioniService : ISessioniService
 
         await _db.SaveChangesAsync();
     }
+
+    public async Task<HashSet<DateOnly>> GetGiorniOccupatiAsync(int ombrelloneId, DateOnly dal, DateOnly al)
+    {
+        // Carica le sessioni aperte sull'ombrellone che si sovrappongono all'intervallo [dal, al]
+        var sessioni = await _db.Sessioni
+            .AsNoTracking()
+            .Where(s => s.OmbrelloneId == ombrelloneId && !s.Chiusa
+                     && s.DataRiferimento <= al
+                     && (s.DataFine == null ? s.DataRiferimento >= dal : s.DataFine >= dal))
+            .Select(s => new { s.DataRiferimento, s.DataFine })
+            .ToListAsync();
+
+        var occupati = new HashSet<DateOnly>();
+        foreach (var s in sessioni)
+        {
+            var inizio = s.DataRiferimento!.Value;
+            var fine = s.DataFine ?? inizio;
+            for (var d = inizio < dal ? dal : inizio; d <= fine && d <= al; d = d.AddDays(1))
+                occupati.Add(d);
+        }
+        return occupati;
+    }
 }

@@ -76,19 +76,41 @@
         <div class="nuova-lista-form">
             <input class="input-nome" placeholder="Nome cliente (opzionale)" @bind="nomeCliente" />
 
-            <div class="giorni-row">
-                <label class="giorni-label">Giorni di soggiorno</label>
-                <input type="number" class="input-giorni" @bind="numGiorni" min="1" max="30" />
-                @if (numGiorni > 1)
-                {
-                    <span class="giorni-hint">
-                        fino al @DateCtx.DataSelezionata.AddDays(numGiorni - 1).ToString("dd MMM", new CultureInfo("it-IT"))
-                    </span>
-                }
+            <div class="data-range-row">
+                <div class="data-range-campo">
+                    <span class="data-range-label">Dal</span>
+                    <span class="data-range-display">@dataInizio.ToString("dd MMM yyyy", ItIt)</span>
+                </div>
+                <span class="data-range-sep">→</span>
+                <div class="data-range-campo">
+                    <span class="data-range-label">Al</span>
+                    <input type="date" class="input-data-range"
+                           min="@dataInizio.ToString("yyyy-MM-dd")"
+                           value="@dataFine.ToString("yyyy-MM-dd")"
+                           @onchange="OnDataFineChanged" />
+                </div>
             </div>
 
-            <button class="btn-apri-lista" @onclick="ApriSessione">
-                @(DateCtx.IsOggi ? "Apri lista" : "Prenota")
+            @if (giorniRange.Count > 0)
+            {
+                <div class="disponibilita-strip">
+                    @foreach (var g in giorniRange)
+                    {
+                        var occ = giorniOccupati.Contains(g);
+                        <div class="giorno-pill @(occ ? "giorno-occupato" : "giorno-libero")">
+                            <span class="giorno-pill-num">@g.Day</span>
+                            <span class="giorno-pill-mes">@g.ToString("MMM", ItIt)</span>
+                        </div>
+                    }
+                </div>
+                @if (hasConflitto)
+                {
+                    <p class="conflitto-avviso">⛔ Ombrellone già occupato in alcuni giorni del periodo selezionato.</p>
+                }
+            }
+
+            <button class="btn-apri-lista" @onclick="ApriSessione" disabled="@hasConflitto">
+                @(DateCtx.IsOggi && dataInizio == DateCtx.DataSelezionata ? "Apri lista" : "Prenota")
             </button>
         </div>
 
@@ -105,16 +127,24 @@
 @code {
     [Parameter] public int Id { get; set; }
 
+    private static readonly CultureInfo ItIt = new("it-IT");
+
     private BeachBar.Core.Entities.Ombrellone? ombrellone;
     private List<BeachBar.Core.Entities.Sessione>? sessioni;
     private string? nomeCliente;
-    private int numGiorni = 1;
+    private DateOnly dataInizio;
+    private DateOnly dataFine;
+    private List<DateOnly> giorniRange = new();
+    private HashSet<DateOnly> giorniOccupati = new();
+    private bool hasConflitto;
     private bool ombrelloneValido = true;
     private bool mostraConfermaLibera;
     private string? errore;
 
     protected override async Task OnInitializedAsync()
     {
+        dataInizio = DateCtx.DataSelezionata;
+        dataFine = DateCtx.DataSelezionata;
         try
         {
             ombrellone = await Sessioni.GetOmbrelloneByIdAsync(Id);
@@ -125,6 +155,7 @@
                 return;
             }
             sessioni = await Sessioni.GetSessioniAttivePerOmbrelloneAsync(Id, DateCtx.DataSelezionata);
+            await AggiornaDisponibilita();
         }
         catch (Exception ex)
         {
@@ -133,12 +164,33 @@
         }
     }
 
+    private async Task OnDataFineChanged(ChangeEventArgs e)
+    {
+        if (DateOnly.TryParse(e.Value?.ToString(), out var d))
+        {
+            dataFine = d < dataInizio ? dataInizio : d;
+            await AggiornaDisponibilita();
+        }
+    }
+
+    private async Task AggiornaDisponibilita()
+    {
+        giorniRange = new List<DateOnly>();
+        for (var d = dataInizio; d <= dataFine; d = d.AddDays(1))
+            giorniRange.Add(d);
+
+        giorniOccupati = await Sessioni.GetGiorniOccupatiAsync(Id, dataInizio, dataFine);
+        hasConflitto = giorniRange.Any(g => giorniOccupati.Contains(g));
+    }
+
     private async Task ApriSessione()
     {
+        if (hasConflitto) return;
         errore = null;
         try
         {
-            var nuova = await Sessioni.ApriSessioneAsync(Id, nomeCliente, DateCtx.DataSelezionata, numGiorni);
+            var giorni = dataFine.DayNumber - dataInizio.DayNumber + 1;
+            var nuova = await Sessioni.ApriSessioneAsync(Id, nomeCliente, dataInizio, giorni);
             Nav.NavigateTo("/conto/" + nuova.Id);
         }
         catch (Exception ex)
