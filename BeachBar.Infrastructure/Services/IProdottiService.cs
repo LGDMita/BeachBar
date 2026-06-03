@@ -19,9 +19,18 @@ public interface IProdottiService
     /// <summary>Restituisce l'elenco delle categorie distinte.</summary>
     Task<List<string>> GetCategorieAsync();
 
+    /// <summary>Aggiunge un nuovo prodotto con Disponibile=true.</summary>
     Task AggiuntaProdottoAsync(string nome, decimal prezzo, string categoria);
+
+    /// <summary>Aggiorna nome, prezzo, categoria e disponibilità di un prodotto esistente.</summary>
     Task AggiornaProdottoAsync(int id, string nome, decimal prezzo, string categoria, bool disponibile);
+
+    /// <summary>Elimina un prodotto; fallisce se ha consumazioni collegate.</summary>
     Task EliminaProdottoAsync(int id);
+
+    /// <summary>Rinomina una categoria aggiornando tutti i prodotti che la usano.</summary>
     Task RinominaCategoriaAsync(string vecchia, string nuova);
+
+    /// <summary>Elimina tutti i prodotti di una categoria.</summary>
     Task EliminaCategoriaAsync(string categoria);
 }

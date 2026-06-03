@@ -2,7 +2,8 @@ namespace BeachBar.Services;
 
 /// <summary>
 /// Mantiene la data di lavoro selezionata dall'utente per tutta la sessione Blazor.
-/// Scoped: una istanza per circuito SignalR (un per tab del browser).
+/// Registrato come Scoped (non Singleton) perché ogni circuito SignalR (ogni tab del browser)
+/// deve avere la propria data indipendente: un Singleton condividerebbe la data tra tutti gli utenti.
 /// </summary>
 public class DateContext
 {

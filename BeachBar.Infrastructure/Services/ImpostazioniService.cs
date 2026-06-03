@@ -10,19 +10,14 @@ public class ImpostazioniService : IImpostazioniService
 
     public ImpostazioniService(BeachBarDbContext db) => _db = db;
 
+    // Helper interno: l'intera configurazione è un singleton (Id=1 garantito dal seed).
+    // Tutti i metodi pubblici passano da qui così un eventuale refactoring del lookup è in un unico punto.
     private async Task<ImpostazioniSpiaggia> GetConfigAsync()
     {
         return await _db.ImpostazioniSpiaggia.FirstOrDefaultAsync(i => i.Id == 1)
             ?? throw new InvalidOperationException(
                 "Configurazione spiaggia non trovata (Id=1). Verificare il seed del database.");
     }
-
-    private static IEnumerable<int> ParseBordiInternal(string? s) =>
-        s == null
-            ? Enumerable.Empty<int>()
-            : s.Split(',', StringSplitOptions.RemoveEmptyEntries)
-               .Where(x => int.TryParse(x, out _))
-               .Select(int.Parse);
 
     public async Task<ImpostazioniSpiaggia> GetImpostazioniAsync()
         => await GetConfigAsync();
@@ -46,6 +41,8 @@ public class ImpostazioniService : IImpostazioniService
         }
         else if (numero < attuali)
         {
+            // Rimuove solo gli ombrelloni liberi con numero > soglia: quelli occupati
+            // vengono preservati per non perdere sessioni aperte.
             var daRimuovere = await _db.Ombrelloni
                 .Where(o => o.Numero > numero && !o.Occupato)
                 .ToListAsync();
@@ -67,6 +64,8 @@ public class ImpostazioniService : IImpostazioniService
         IQueryable<Sessione> chiuseQuery = _db.Sessioni.Where(s => s.Chiusa && s.DataRiferimento == data);
         if (data == oggi)
         {
+            // Il reset visivo non cancella i dati: filtra per Chiusura >= soglia così
+            // le sessioni chiuse prima del reset non rientrano nel contatore "incassato oggi".
             var imp = await GetConfigAsync();
             if (imp.UltimoResetStatistiche.HasValue)
                 chiuseQuery = chiuseQuery.Where(s => s.Chiusura >= imp.UltimoResetStatistiche.Value);
@@ -79,12 +78,13 @@ public class ImpostazioniService : IImpostazioniService
         int attivi;
         if (data == oggi)
         {
-            // Per oggi: conta gli ombrelloni Occupati (con lista aperta o senza)
+            // Per oggi il flag Occupato è la fonte di verità (include "senza lista")
             attivi = await _db.Ombrelloni.CountAsync(o => o.Occupato);
         }
         else
         {
-            // Per altre date: conta le sessioni attive (il flag Occupato riflette solo oggi)
+            // Per date diverse da oggi il flag Occupato riflette solo la situazione attuale,
+            // quindi si conta dalle sessioni aperte in quella data.
             attivi = await _db.Sessioni
                 .CountAsync(s => !s.Chiusa && s.OmbrelloneId != null
                               && s.DataRiferimento <= data
@@ -110,13 +110,15 @@ public class ImpostazioniService : IImpostazioniService
 
         if (cambiate)
         {
-            // Azzera tutte le posizioni
+            // Cambiando le dimensioni le celle cambiano indice: resettare tutto è più sicuro
+            // che provare a ricalcolare le posizioni (potrebbe collocare ombrelloni fuori griglia).
             var tutti = await _db.Ombrelloni.ToListAsync();
             foreach (var o in tutti) o.CellaIndice = null;
 
-            // Rimuovi bordi fuori dai limiti della nuova griglia
-            var v = ParseBordiInternal(imp.BordiVerticali).Where(c => c < colonne - 1).ToList();
-            var h = ParseBordiInternal(imp.BordiOrizzontali).Where(r => r < righe - 1).ToList();
+            // I bordi sono indici 0-based relativi alla griglia corrente: se la nuova griglia
+            // è più piccola, i bordi oltre i nuovi limiti diventano invalidi e vanno rimossi.
+            var v = imp.BordiVerticaliSet.Where(c => c < colonne - 1).ToList();
+            var h = imp.BordiOrizzontaliSet.Where(r => r < righe - 1).ToList();
             imp.BordiVerticali = v.Count > 0 ? string.Join(",", v) : null;
             imp.BordiOrizzontali = h.Count > 0 ? string.Join(",", h) : null;
         }
@@ -141,7 +143,8 @@ public class ImpostazioniService : IImpostazioniService
 
     public async Task AssegnaCellaAsync(int cellaIndice)
     {
-        // Controllo server-side: la cella potrebbe già essere occupata (race condition)
+        // Controllo server-side: la cella potrebbe essere già occupata se due tab
+        // aprono l'editor contemporaneamente (Blazor Server non garantisce atomicità).
         if (await _db.Ombrelloni.AnyAsync(o => o.CellaIndice == cellaIndice))
             return;
 

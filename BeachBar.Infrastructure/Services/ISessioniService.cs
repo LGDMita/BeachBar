@@ -48,8 +48,13 @@ public interface ISessioniService
     /// </summary>
     Task ChiudiSessioneAsync(int sessioneId, bool liberaOmbrellone = false);
 
+    /// <summary>Elimina la sessione e, se non ci sono altre sessioni chiuse oggi, libera l'ombrellone.</summary>
     Task AnnullaSessioneAsync(int sessioneId);
+
+    /// <summary>Aggiorna solo il nome del cliente sulla sessione, senza toccare lo stato.</summary>
     Task AggiornaNomeSessioneAsync(int sessioneId, string? nuovoNome);
+
+    /// <summary>Elimina definitivamente una sessione già chiusa dallo storico.</summary>
     Task EliminaSessioneStoricoAsync(int id);
 
     /// <summary>Libera manualmente l'ombrellone (Occupato=false) senza sessioni da chiudere. Usato dalla pagina Ombrellone per ombrelloni "senza lista".</summary>

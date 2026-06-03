@@ -17,7 +17,8 @@ public class SessioniService : ISessioniService
             .OrderBy(o => o.Numero)
             .ToListAsync();
 
-        // Sessioni attive per la data: include soggiorni multi-giorno che comprendono questa data
+        // Sessioni attive per la data: include soggiorni multi-giorno che comprendono questa data.
+        // La condizione DataFine == null || DataFine >= data gestisce sia giorno singolo sia range.
         var sessioniAperte = await _db.Sessioni
             .AsNoTracking()
             .Where(s => !s.Chiusa && s.OmbrelloneId != null
@@ -34,21 +35,25 @@ public class SessioniService : ISessioniService
         {
             if (perOmbrellone.TryGetValue(o.Id, out var sessioni))
             {
+                // Occupato viene impostato in memoria (non letto dal DB) perché per date future
+                // il flag DB è sempre false ma la sessione prenotata lo rende logicamente occupato.
                 o.Occupato = true;
                 o.Sessioni = sessioni;
             }
             else
             {
-                // Per date diverse da oggi: nessuna sessione = libero.
-                // Per oggi: preserva il flag DB — il cliente può essere "senza lista".
+                // Per date diverse da oggi: nessuna sessione aperta implica libero,
+                // ignorando il flag DB che riflette solo la realtà odierna.
+                // Per oggi: preserva il flag DB — il cliente può essere presente senza lista.
                 if (data != oggi)
                     o.Occupato = false;
                 o.Sessioni = new List<Sessione>();
             }
         }
 
-        // Per gli ombrelloni "senza lista" di oggi, carica il nome dal conto chiuso più recente
-        // così il nome del cliente rimane visibile in dashboard anche dopo "Chiudi lista e incassa".
+        // Per gli ombrelloni "senza lista" di oggi, recupera il nome dalla sessione chiusa più recente.
+        // Serve per mostrare il nome del cliente in dashboard dopo "Chiudi lista e incassa":
+        // in quel caso Occupato rimane true ma non c'è più nessuna sessione aperta.
         if (data == oggi)
         {
             var senzaListaIds = ombrelloni
@@ -154,9 +159,12 @@ public class SessioniService : ISessioniService
             ?? throw new InvalidOperationException($"Ombrellone {ombrelloneId} non trovato.");
 
         var oggi = DateOnly.FromDateTime(DateTime.Today);
+        // Marca l'ombrellone occupato solo se il soggiorno include oggi:
+        // le prenotazioni future non devono toccare il flag DB finché il cliente non è arrivato.
         if (dataRiferimento <= oggi && (giorni <= 1 || dataRiferimento.AddDays(giorni - 1) >= oggi))
             ombrellone.Occupato = true;
 
+        // DataFine null = giorno singolo (evita di memorizzare la stessa data due volte)
         var dataFine = giorni > 1 ? dataRiferimento.AddDays(giorni - 1) : (DateOnly?)null;
 
         var nuova = new Sessione
@@ -205,6 +213,8 @@ public class SessioniService : ISessioniService
 
         if (liberaOmbrellone && sessione.OmbrelloneId.HasValue)
         {
+            // Verifica le altre sessioni prima di liberare: se l'ombrellone ha un'altra lista
+            // aperta (es. prenotazione futura), non deve essere marcato come libero.
             var altreAperte = await _db.Sessioni.AnyAsync(s =>
                 s.OmbrelloneId == sessione.OmbrelloneId && !s.Chiusa && s.Id != sessioneId);
             if (!altreAperte)
@@ -303,7 +313,9 @@ public class SessioniService : ISessioniService
 
     public async Task<HashSet<DateOnly>> GetGiorniOccupatiAsync(int ombrelloneId, DateOnly dal, DateOnly al)
     {
-        // Carica le sessioni aperte sull'ombrellone che si sovrappongono all'intervallo [dal, al]
+        // Overlap query: una sessione si sovrappone a [dal, al] se inizia prima di al E finisce dopo dal.
+        // Per giorno singolo (DataFine null) "fine" è uguale a DataRiferimento, quindi la condizione
+        // si semplifica in DataRiferimento >= dal.
         var sessioni = await _db.Sessioni
             .AsNoTracking()
             .Where(s => s.OmbrelloneId == ombrelloneId && !s.Chiusa
@@ -317,6 +329,7 @@ public class SessioniService : ISessioniService
         {
             var inizio = s.DataRiferimento!.Value;
             var fine = s.DataFine ?? inizio;
+            // Espande ogni sessione nei singoli giorni coperti, troncata ai limiti dell'intervallo richiesto
             for (var d = inizio < dal ? dal : inizio; d <= fine && d <= al; d = d.AddDays(1))
                 occupati.Add(d);
         }

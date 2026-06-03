@@ -4,6 +4,8 @@ using System.Text;
 
 namespace BeachBar.Core.Entities
 {
+    // Voce del menu. Disponibile=false nasconde il prodotto dalla pagina Conto senza eliminarlo,
+    // preservando le consumazioni storiche già registrate.
     public class Prodotto
     {
         public int Id { get; set; }

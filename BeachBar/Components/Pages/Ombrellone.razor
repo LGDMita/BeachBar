@@ -3,11 +3,9 @@
 @inject BeachBar.Infrastructure.Services.ISessioniService Sessioni
 @inject BeachBar.Services.DateContext DateCtx
 @inject NavigationManager Nav
-@using System.Globalization
-
 <div class="dashboard ombrellone-pagina">
     <h2 class="ombrellone-titolo">Ombrellone @Id</h2>
-    <p class="ombrellone-data">📅 @DateCtx.DataSelezionata.ToString("dd MMMM yyyy", new CultureInfo("it-IT"))</p>
+    <p class="ombrellone-data">📅 @DateCtx.DataSelezionata.ToString("dd MMMM yyyy", ItCulture.IT)</p>
 
     @if (errore != null)
     {
@@ -24,8 +22,8 @@
                 var totale = s.Consumazioni.Sum(c => c.Quantita * c.Prodotto.Prezzo);
                 var nProdotti = s.Consumazioni.Sum(c => c.Quantita);
                 var dataRange = s.DataFine.HasValue
-                    ? $"{s.DataRiferimento?.ToString("dd MMM", new CultureInfo("it-IT"))} – {s.DataFine?.ToString("dd MMM", new CultureInfo("it-IT"))}"
-                    : s.DataRiferimento?.ToString("dd MMMM", new CultureInfo("it-IT"));
+                    ? $"{s.DataRiferimento?.ToString("dd MMM", ItCulture.IT)} – {s.DataFine?.ToString("dd MMM", ItCulture.IT)}"
+                    : s.DataRiferimento?.ToString("dd MMMM", ItCulture.IT);
 
                 <div class="lista-card">
                     <div class="lista-card-info">
@@ -79,7 +77,7 @@
             <div class="data-range-row">
                 <div class="data-range-campo">
                     <span class="data-range-label">Dal</span>
-                    <span class="data-range-display">@dataInizio.ToString("dd MMM yyyy", ItIt)</span>
+                    <span class="data-range-display">@dataInizio.ToString("dd MMM yyyy", ItCulture.IT)</span>
                 </div>
                 <span class="data-range-sep">→</span>
                 <div class="data-range-campo">
@@ -99,7 +97,7 @@
                         var occ = giorniOccupati.Contains(g);
                         <div class="giorno-pill @(occ ? "giorno-occupato" : "giorno-libero")">
                             <span class="giorno-pill-num">@g.Day</span>
-                            <span class="giorno-pill-mes">@g.ToString("MMM", ItIt)</span>
+                            <span class="giorno-pill-mes">@g.ToString("MMM", ItCulture.IT)</span>
                         </div>
                     }
                 </div>
@@ -126,8 +124,6 @@
 
 @code {
     [Parameter] public int Id { get; set; }
-
-    private static readonly CultureInfo ItIt = new("it-IT");
 
     private BeachBar.Core.Entities.Ombrellone? ombrellone;
     private List<BeachBar.Core.Entities.Sessione>? sessioni;
@@ -175,16 +171,22 @@
 
     private async Task AggiornaDisponibilita()
     {
+        // Ricalcola ogni volta che l'utente cambia la data di fine: costruisce l'elenco
+        // dei giorni del range, poi chiede al service quali sono già occupati da altre sessioni.
+        // Il confronto è locale per evitare round-trip aggiuntivi al DB.
         giorniRange = new List<DateOnly>();
         for (var d = dataInizio; d <= dataFine; d = d.AddDays(1))
             giorniRange.Add(d);
 
         giorniOccupati = await Sessioni.GetGiorniOccupatiAsync(Id, dataInizio, dataFine);
+        // hasConflitto blocca il pulsante "Apri lista" e viene recalcolato ad ogni modifica della data.
         hasConflitto = giorniRange.Any(g => giorniOccupati.Contains(g));
     }
 
     private async Task ApriSessione()
     {
+        // Doppio controllo: il pulsante è già disabled, ma la guardia protegge da invocazioni
+        // programmatiche o submit via Enter sul form.
         if (hasConflitto) return;
         errore = null;
         try

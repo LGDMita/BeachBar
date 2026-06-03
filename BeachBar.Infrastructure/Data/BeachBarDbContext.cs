@@ -3,6 +3,11 @@ using Microsoft.EntityFrameworkCore;
 
 namespace BeachBar.Infrastructure.Data;
 
+/// <summary>
+/// Contesto EF Core principale. Contiene il seed dei dati iniziali (ombrelloni, prodotti,
+/// configurazione griglia) direttamente in OnModelCreating per garantire uno stato coerente
+/// su ogni migrazione fresh.
+/// </summary>
 public class BeachBarDbContext : DbContext
 {
     public BeachBarDbContext(DbContextOptions<BeachBarDbContext> options) : base(options) { }

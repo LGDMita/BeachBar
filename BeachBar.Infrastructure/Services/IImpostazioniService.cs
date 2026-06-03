@@ -4,7 +4,10 @@ namespace BeachBar.Infrastructure.Services;
 
 public interface IImpostazioniService
 {
+    /// <summary>Restituisce la configurazione spiaggia (record Id=1).</summary>
     Task<ImpostazioniSpiaggia> GetImpostazioniAsync();
+
+    /// <summary>Aggiorna solo il numero di colonne della griglia senza toccare le posizioni.</summary>
     Task AggiornaColumeAsync(int colonne);
 
     /// <summary>Aggiunge o rimuove ombrelloni per raggiungere il numero desiderato.</summary>

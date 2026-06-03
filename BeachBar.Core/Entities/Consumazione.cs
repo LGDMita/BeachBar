@@ -13,6 +13,10 @@ namespace BeachBar.Core.Entities
         public Prodotto Prodotto { get; set; } = null!;
         public int Quantita { get; set; }
         public DateTime Timestamp { get; set; }
+
+        // Per sessioni multi-giorno la stessa lista copre più giorni: Giorno consente di
+        // raggruppare e mostrare i consumi per singolo giorno nello scontrino, e di impedire
+        // la modifica di righe di giorni passati dalla pagina Conto.
         /// <summary>Giorno in cui il prodotto è stato ordinato (per visualizzazione multi-giorno).</summary>
         public DateOnly Giorno { get; set; }
     }

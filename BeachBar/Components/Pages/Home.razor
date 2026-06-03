@@ -219,8 +219,16 @@
     private int colonne = 4;
     private int numRighe = 5;
     private int numColonne = 4;
+
+    // usaLayoutCustom = almeno un ombrellone ha CellaIndice assegnato → usa la griglia posizionale.
+    // usaGrigliaRighe = true anche se ci sono solo bordi senza posizioni custom: in quel caso
+    // gli ombrelloni vengono disposti sequenzialmente ma il rendering per righe è necessario
+    // per mostrare i separatori orizzontali tra righe.
     private bool usaLayoutCustom;
     private bool usaGrigliaRighe;
+
+    // Array sparso [righe × colonne]: null = cella vuota, non null = ombrellone posizionato.
+    // Indicizzato come CellaIndice = riga * numColonne + colonna.
     private BeachBar.Core.Entities.Ombrellone?[] celleGrid = Array.Empty<BeachBar.Core.Entities.Ombrellone?>();
     private HashSet<int> bordiV = new();
     private HashSet<int> bordiH = new();
@@ -229,14 +237,6 @@
     private bool mostraNuovoContoExtra;
     private string? nomeContoExtra;
     private string? ombrelloneExtraStr;
-
-    private static HashSet<int> ParseBordi(string? s) =>
-        s == null
-            ? new()
-            : s.Split(',', StringSplitOptions.RemoveEmptyEntries)
-               .Where(x => int.TryParse(x, out _))
-               .Select(int.Parse)
-               .ToHashSet();
 
     protected override async Task OnInitializedAsync() => await CaricaDati();
 
@@ -259,8 +259,8 @@
             colonne = imp.NumeroColonne;
             numColonne = imp.NumeroColonne;
             numRighe = imp.NumeroRighe;
-            bordiV = ParseBordi(imp.BordiVerticali);
-            bordiH = ParseBordi(imp.BordiOrizzontali);
+            bordiV = imp.BordiVerticaliSet;
+            bordiH = imp.BordiOrizzontaliSet;
 
             usaLayoutCustom = ombrelloni.Any(o => o.CellaIndice.HasValue);
             bool hasBordi = bordiV.Count > 0 || bordiH.Count > 0;
@@ -268,7 +268,8 @@
 
             if (usaLayoutCustom)
             {
-                // Posizionamento esplicito: usa CellaIndice per costruire la griglia
+                // Popola celleGrid dagli indici salvati sul DB: le celle senza ombrellone restano null
+                // e vengono renderizzate come placeholder (caselle vuote nella griglia).
                 celleGrid = new BeachBar.Core.Entities.Ombrellone?[numRighe * numColonne];
                 foreach (var o in ombrelloni.Where(o => o.CellaIndice.HasValue))
                 {
@@ -279,7 +280,8 @@
 
             if (!usaLayoutCustom && hasBordi)
             {
-                // Nessuna posizione custom, ma ci sono bordi: rendering per righe con layout sequenziale
+                // Solo bordi, nessuna posizione custom: il numero di righe si calcola dinamicamente
+                // dal numero di ombrelloni (non da NumeroRighe del DB che serve solo al layout custom).
                 int righeCalcolate = numColonne > 0
                     ? (ombrelloni.Count + numColonne - 1) / numColonne
                     : 1;

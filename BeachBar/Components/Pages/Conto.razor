@@ -5,7 +5,6 @@
 @inject BeachBar.Infrastructure.Services.IConsumazioniService Consumazioni
 @inject BeachBar.Services.DateContext DateCtx
 @inject NavigationManager Nav
-@using System.Globalization
 
 <div class="scheda-layout">
 
@@ -26,14 +25,14 @@
                 @if (sessione.DataFine.HasValue)
                 {
                     <p class="conto-data">
-                        📅 @sessione.DataRiferimento?.ToString("dd MMM", new CultureInfo("it-IT")) –
-                        @sessione.DataFine?.ToString("dd MMM yyyy", new CultureInfo("it-IT"))
+                        📅 @sessione.DataRiferimento?.ToString("dd MMM", ItCulture.IT) –
+                        @sessione.DataFine?.ToString("dd MMM yyyy", ItCulture.IT)
                     </p>
                 }
                 else
                 {
                     <p class="conto-data">
-                        📅 @((sessione.DataRiferimento ?? DateCtx.DataSelezionata).ToString("dd MMMM yyyy", new CultureInfo("it-IT")))
+                        📅 @((sessione.DataRiferimento ?? DateCtx.DataSelezionata).ToString("dd MMMM yyyy", ItCulture.IT))
                     </p>
                 }
             }
@@ -108,7 +107,7 @@
                         @if (giorni.Count > 1)
                         {
                             <div class="lista-giorno-header">
-                                @gruppo.Key.ToString("dddd dd MMM", new CultureInfo("it-IT"))
+                                @gruppo.Key.ToString("dddd dd MMM", ItCulture.IT)
                             </div>
                         }
 
@@ -204,6 +203,11 @@
     private string categoriaSelezionata = "";
     private bool isEditingNome;
     private string? nuovoNome;
+
+    // ConfermaStato sostituisce booleani multipli: ogni azione distruttiva mostra
+    // un pannello di conferma diverso nello stesso spazio UI senza variabili separate.
+    // ChiudiOmbrellone → ChiudiSessioneAsync(liberaOmbrellone: true)  — ombrellone libero
+    // ChiudiLista      → ChiudiSessioneAsync(liberaOmbrellone: false) — ombrellone resta occupato
     private enum ConfermaStato { Nessuna, ChiudiOmbrellone, ChiudiLista, Annulla }
     private ConfermaStato conferma = ConfermaStato.Nessuna;
     private string? errore;
@@ -262,6 +266,9 @@
 
     private async Task ChiudiSessione(bool liberaOmbrellone)
     {
+        // liberaOmbrellone=true → "Chiudi ombrellone e incassa": il posto torna disponibile subito.
+        // liberaOmbrellone=false → "Chiudi lista e incassa": il cliente fisso resta segnato come
+        // occupato anche senza lista aperta, pronto per riaprire il giorno successivo.
         errore = null;
         try { await Sessioni.ChiudiSessioneAsync(sessione!.Id, liberaOmbrellone); Nav.NavigateTo("/"); }
         catch (Exception ex) { errore = $"Impossibile chiudere la lista: {ex.Message}"; }
