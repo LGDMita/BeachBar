@@ -1,0 +1,405 @@
+@* Sub-componente della pagina Impostazioni — sezione "Spiaggia".
+   Gestisce il layout editor della griglia ombrelloni e i bordi separatori.
+   È Scoped per circuito: inietta direttamente i service senza bisogno di parametri. *@
+@inject BeachBar.Infrastructure.Services.IImpostazioniService ImpostazioniSvc
+@inject IJSRuntime JS
+@implements IAsyncDisposable
+
+<div class="sezione-card">
+    <h3>Dimensioni griglia</h3>
+    <p class="sezione-desc">Imposta quante righe e colonne ha la mappa della spiaggia. Cambiare le dimensioni azzera le posizioni già assegnate — gli ombrelloni rimangono nel sistema ma vanno riposizionati.</p>
+    <div class="form-riga">
+        <label>Righe</label>
+        <input type="number" class="input-numero" @bind="tempRighe" min="1" max="20" />
+    </div>
+    <div class="form-riga">
+        <label>Colonne</label>
+        <input type="number" class="input-numero" @bind="tempColonne" min="1" max="16" />
+    </div>
+    <p class="help-dim">⚠️ Cambiare le dimensioni azzera tutte le posizioni e i bordi fuori dai nuovi limiti.</p>
+
+    @if (confermaDimensioni)
+    {
+        <div class="alert-conferma" style="margin-top:12px;">
+            <span>Il layout attuale verrà azzerato. Continuare?</span>
+            <button class="btn-conferma-si" @onclick="ApplicaDimensioni">Sì, ridimensiona</button>
+            <button class="btn-conferma-no" @onclick="() => { confermaDimensioni = false; tempRighe = numRighe; tempColonne = numColonne; }">Annulla</button>
+        </div>
+    }
+    else
+    {
+        <button class="btn-salva" @onclick="ClickApplicaDimensioni">Applica dimensioni</button>
+    }
+
+    @if (msgSpiaggia != null)
+    {
+        <p class="msg-ok">✓ @msgSpiaggia</p>
+    }
+</div>
+
+<div class="sezione-card sezione-card-mappa">
+    <div class="editor-header">
+        <div>
+            <h3 style="margin:0 0 4px;">Mappa ombrelloni</h3>
+            <p class="sezione-desc" style="margin:0;">Clicca o trascina sulle celle vuote per posizionare gli ombrelloni. Le celle non occupate vengono comunque mostrate sulla dashboard come quadrati grigi, a indicare lo spazio disponibile.</p>
+        </div>
+        <div class="editor-status">
+            <span class="status-chip status-ok">@celleOccupate / @(numRighe * numColonne) celle</span>
+            @if (!modalitaCancella && celleOccupate < numRighe * numColonne)
+            {
+                <span class="status-chip status-next">Prossimo: <strong>#@ProssimoNumero</strong></span>
+            }
+        </div>
+    </div>
+
+    <div class="editor-toolbar">
+        <div class="editor-help-text">
+            @if (modalitaCancella)
+            {
+                <span>🗑️ <strong>Modalità cancella:</strong> clicca su un ombrellone per rimuoverlo</span>
+            }
+            else
+            {
+                <span>Click su cella vuota = posiziona · Click destro su cella piena = rimuovi · Click sul separatore = bordo</span>
+            }
+        </div>
+        <button class="mode-toggle @(modalitaCancella ? "mode-toggle-on" : "")"
+                @onclick="() => modalitaCancella = !modalitaCancella"
+                title="@(modalitaCancella ? "Disattiva modalità cancella" : "Attiva modalità cancella (utile su touch screen)")">
+            @(modalitaCancella ? "✕ Cancella ON" : "✕ Cancella")
+        </button>
+    </div>
+
+    <div class="editor-outer">
+      <div class="editor-scroll-inner">
+        @* Riga etichette colonne *@
+        <div class="editor-col-header">
+            <div class="editor-corner-spacer"></div>
+            @for (int c = 0; c < numColonne; c++)
+            {
+                <div class="editor-label-cell-col">@(c + 1)</div>
+                @if (c < numColonne - 1) { <div class="editor-label-gap-h"></div> }
+            }
+        </div>
+
+        @* Griglia + etichette righe *@
+        <div class="editor-main">
+            <div class="editor-row-labels">
+                @for (int r = 0; r < numRighe; r++)
+                {
+                    <div class="editor-label-cell-row">@(r + 1)</div>
+                    @if (r < numRighe - 1) { <div class="editor-label-gap-v"></div> }
+                }
+            </div>
+
+            <div class="editor-scroll-x">
+                <div class="layout-editor @(modalitaCancella ? "modalita-cancella" : "")"
+                     style="@EditorGridStyle"
+                     @ref="_editorRef">
+                    @for (int r = 0; r < numRighe; r++)
+                    {
+                        @for (int c = 0; c < numColonne; c++)
+                        {
+                            int idx = r * numColonne + c;
+                            var omb = idx < celleEditor.Length ? celleEditor[idx] : null;
+
+                            <div class="editor-cell @(omb != null ? "cell-piena" : "cell-vuota")"
+                                 data-cell-idx="@idx"
+                                 @onclick="() => GestioneClickCella(idx)"
+                                 @oncontextmenu:preventDefault="true"
+                                 @oncontextmenu="() => RimuoviDaCellaEditor(idx)"
+                                 title="@(omb != null ? $"Ombrellone #{omb.Numero} · click destro per rimuovere" : "Clicca per posizionare")">
+                                @if (omb != null)
+                                {
+                                    <span class="cell-num">@omb.Numero</span>
+                                }
+                                else if (!modalitaCancella)
+                                {
+                                    <span class="cell-hint">+</span>
+                                }
+                            </div>
+
+                            @if (c < numColonne - 1)
+                            {
+                                int sepC = c;
+                                bool vOn = bordiV.Contains(sepC);
+                                <div class="editor-sep editor-sep-v @(vOn ? "sep-on" : "sep-off")"
+                                     title="@(vOn ? "Rimuovi bordo verticale" : "Aggiungi bordo verticale")"
+                                     @onclick="() => ToggleBordoV(sepC)">
+                                    <div class="sep-inner"></div>
+                                </div>
+                            }
+                        }
+
+                        @if (r < numRighe - 1)
+                        {
+                            int sepR = r;
+                            bool hOn = bordiH.Contains(sepR);
+
+                            @for (int c = 0; c < numColonne; c++)
+                            {
+                                <div class="editor-sep editor-sep-h @(hOn ? "sep-on" : "sep-off")"
+                                     title="@(hOn ? "Rimuovi bordo orizzontale" : "Aggiungi bordo orizzontale")"
+                                     @onclick="() => ToggleBordoH(sepR)">
+                                    <div class="sep-inner"></div>
+                                </div>
+
+                                @if (c < numColonne - 1)
+                                {
+                                    int localC = c;
+                                    bool cornerOn = bordiV.Contains(localC) && hOn;
+                                    <div class="editor-corner @(cornerOn ? "corner-on" : "")"></div>
+                                }
+                            }
+                        }
+                    }
+                </div>
+            </div>
+        </div>
+      </div>
+    </div>
+
+    @if (ombrelloniNonPosizionati.Count > 0)
+    {
+        <div class="pool-info">
+            <span class="pool-count">@ombrelloniNonPosizionati.Count non posizionati</span>
+            <span class="pool-list">
+                (@string.Join(", ", ombrelloniNonPosizionati.Take(10).Select(o => "#" + o.Numero))@(ombrelloniNonPosizionati.Count > 10 ? "..." : ""))
+            </span>
+            <span class="pool-hint">Il click su cella vuota li assegna in ordine</span>
+        </div>
+    }
+
+    <div class="editor-azioni">
+        <button class="btn-azione" @onclick="PopolaSequenziale" title="Riempie tutta la griglia con ombrelloni numerati in sequenza (crea i mancanti)">
+            ⚡ Popola griglia intera
+        </button>
+        @if (!confermaAzzeraLayout)
+        {
+            <button class="btn-azione btn-azione-danger" @onclick="() => confermaAzzeraLayout = true">
+                🗑️ Azzera posizioni
+            </button>
+        }
+        else
+        {
+            <span class="conferma-inline">
+                Rimuovere tutti dalla griglia?
+                <button class="btn-conferma-si" style="padding:6px 14px;" @onclick="EseguiAzzeraLayout">Sì</button>
+                <button class="btn-conferma-no" style="padding:6px 14px;" @onclick="() => confermaAzzeraLayout = false">No</button>
+            </span>
+        }
+    </div>
+</div>
+
+@if (errore != null)
+{
+    <div class="alert-errore">⚠️ @errore</div>
+}
+
+@code {
+    private int numRighe = 5;
+    private int numColonne = 4;
+    private int tempRighe = 5;
+    private int tempColonne = 4;
+    private int numOmbrelloni;
+    private HashSet<int> bordiV = new();
+    private HashSet<int> bordiH = new();
+    private BeachBar.Core.Entities.Ombrellone?[] celleEditor = Array.Empty<BeachBar.Core.Entities.Ombrellone?>();
+    private List<BeachBar.Core.Entities.Ombrellone> ombrelloniNonPosizionati = new();
+    private bool modalitaCancella;
+    private bool confermaAzzeraLayout;
+    private bool confermaDimensioni;
+    private string? msgSpiaggia;
+    private string? errore;
+    private int _msgVersion;
+
+    private int celleOccupate => celleEditor.Count(c => c != null);
+    private bool LayoutHasCelle => celleEditor.Any(c => c != null);
+
+    private int ProssimoNumero =>
+        ombrelloniNonPosizionati.Count > 0
+            ? ombrelloniNonPosizionati[0].Numero
+            : (celleEditor.Any(c => c != null)
+                ? celleEditor.Where(c => c != null).Max(c => c!.Numero) + 1
+                : 1);
+
+    private string EditorGridStyle =>
+        "display:grid;" +
+        "grid-template-columns:" + string.Join(" ", Enumerable.Range(0, 2 * numColonne - 1).Select(i => i % 2 == 0 ? "52px" : "12px")) + ";" +
+        "grid-template-rows:" + string.Join(" ", Enumerable.Range(0, 2 * numRighe - 1).Select(i => i % 2 == 0 ? "44px" : "12px")) + ";" +
+        "gap:0;width:fit-content;";
+
+    // ── Drag JS (mouse + touch tramite pointer events) ────────────────────
+    private ElementReference _editorRef;
+    private DotNetObjectReference<ImpostazioniSpiaggia>? _dotNetRef;
+    private bool _dragJsReady;
+
+    protected override async Task OnInitializedAsync()
+    {
+        try { await CaricaLayoutEditor(); }
+        catch (Exception ex) { errore = $"Impossibile caricare il layout: {ex.Message}"; }
+    }
+
+    private async Task CaricaLayoutEditor()
+    {
+        var imp = await ImpostazioniSvc.GetImpostazioniAsync();
+        numOmbrelloni = imp.NumeroOmbrelloni;
+        numColonne = imp.NumeroColonne;
+        numRighe = imp.NumeroRighe;
+        tempColonne = numColonne;
+        tempRighe = numRighe;
+        // Usa le proprietà computed dell'entità invece di ParseBordi locale
+        bordiV = imp.BordiVerticaliSet;
+        bordiH = imp.BordiOrizzontaliSet;
+
+        var tutti = await ImpostazioniSvc.GetOmbrelloniPerEditorAsync();
+        int totCelle = numRighe * numColonne;
+        celleEditor = new BeachBar.Core.Entities.Ombrellone?[totCelle];
+        ombrelloniNonPosizionati = new();
+
+        foreach (var o in tutti)
+        {
+            if (o.CellaIndice.HasValue && o.CellaIndice.Value < totCelle)
+                celleEditor[o.CellaIndice.Value] = o;
+            else
+                ombrelloniNonPosizionati.Add(o);
+        }
+    }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        if (!_dragJsReady)
+        {
+            _dragJsReady = true;
+            _dotNetRef ??= DotNetObjectReference.Create(this);
+            await JS.InvokeVoidAsync("belix.editorDrag.init", _dotNetRef, _editorRef);
+        }
+    }
+
+    [JSInvokable]
+    public async Task CompletaDragJS(int[] indici)
+    {
+        if (indici.Length == 0) return;
+        errore = null;
+        try
+        {
+            await ImpostazioniSvc.AssegnaCelleAsync(indici);
+            await CaricaLayoutEditor();
+        }
+        catch (Exception ex)
+        {
+            errore = $"Errore: {ex.Message}";
+            await CaricaLayoutEditor();
+        }
+        await InvokeAsync(StateHasChanged);
+    }
+
+    public async ValueTask DisposeAsync()
+    {
+        try { await JS.InvokeVoidAsync("belix.editorDrag.dispose"); } catch { }
+        _dotNetRef?.Dispose();
+    }
+
+    private void SetMsg(string msg)
+    {
+        msgSpiaggia = msg;
+        int v = ++_msgVersion;
+        _ = ClearMsgAsync(v);
+    }
+
+    private async Task ClearMsgAsync(int version)
+    {
+        await Task.Delay(3500);
+        if (_msgVersion == version)
+        {
+            msgSpiaggia = null;
+            await InvokeAsync(StateHasChanged);
+        }
+    }
+
+    private async Task ClickApplicaDimensioni()
+    {
+        bool dimensioniCambiate = tempRighe != numRighe || tempColonne != numColonne;
+        if (dimensioniCambiate && LayoutHasCelle)
+            confermaDimensioni = true;
+        else
+            await ApplicaDimensioni();
+    }
+
+    private async Task ApplicaDimensioni()
+    {
+        errore = null;
+        confermaDimensioni = false;
+        try
+        {
+            await ImpostazioniSvc.AggiornaGrigliaAsync(tempRighe, tempColonne);
+            await CaricaLayoutEditor();
+            SetMsg($"Griglia ridimensionata a {numRighe}×{numColonne}.");
+        }
+        catch (Exception ex) { errore = $"Errore: {ex.Message}"; }
+    }
+
+    private async Task GestioneClickCella(int idx)
+    {
+        if (modalitaCancella) await RimuoviDaCellaEditor(idx);
+        else await ClickCellaEditor(idx);
+    }
+
+    private async Task ClickCellaEditor(int idx)
+    {
+        if (idx < celleEditor.Length && celleEditor[idx] != null) return;
+        errore = null;
+        try { await ImpostazioniSvc.AssegnaCellaAsync(idx); await CaricaLayoutEditor(); }
+        catch (Exception ex) { errore = $"Errore: {ex.Message}"; }
+    }
+
+    private async Task RimuoviDaCellaEditor(int idx)
+    {
+        if (idx >= celleEditor.Length || celleEditor[idx] == null) return;
+        errore = null;
+        try { await ImpostazioniSvc.RimuoviDaCellaAsync(idx); await CaricaLayoutEditor(); }
+        catch (Exception ex) { errore = $"Errore: {ex.Message}"; }
+    }
+
+    private async Task ToggleBordoV(int col)
+    {
+        errore = null;
+        try
+        {
+            if (!bordiV.Remove(col)) bordiV.Add(col);
+            await ImpostazioniSvc.AggiornaBordiAsync(bordiV, bordiH);
+        }
+        catch (Exception ex) { errore = $"Errore: {ex.Message}"; await CaricaLayoutEditor(); }
+    }
+
+    private async Task ToggleBordoH(int row)
+    {
+        errore = null;
+        try
+        {
+            if (!bordiH.Remove(row)) bordiH.Add(row);
+            await ImpostazioniSvc.AggiornaBordiAsync(bordiV, bordiH);
+        }
+        catch (Exception ex) { errore = $"Errore: {ex.Message}"; await CaricaLayoutEditor(); }
+    }
+
+    private async Task PopolaSequenziale()
+    {
+        errore = null;
+        try
+        {
+            await ImpostazioniSvc.PopolaSequenzialeAsync();
+            await CaricaLayoutEditor();
+            SetMsg($"Griglia popolata: {celleOccupate} ombrelloni posizionati.");
+        }
+        catch (Exception ex) { errore = $"Errore: {ex.Message}"; }
+    }
+
+    private async Task EseguiAzzeraLayout()
+    {
+        errore = null;
+        confermaAzzeraLayout = false;
+        try { await ImpostazioniSvc.AzzeraLayoutAsync(); await CaricaLayoutEditor(); SetMsg("Posizioni azzerate."); }
+        catch (Exception ex) { errore = $"Errore: {ex.Message}"; }
+    }
+}

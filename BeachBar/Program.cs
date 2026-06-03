@@ -26,6 +26,9 @@ builder.Services.AddScoped<ISessioniService, SessioniService>();
 builder.Services.AddScoped<IConsumazioniService, ConsumazioniService>();
 builder.Services.AddScoped<IImpostazioniService, ImpostazioniService>();
 builder.Services.AddScoped<BeachBar.Services.DateContext>();
+// Singleton: un'unica istanza condivisa tra tutti i circuiti Blazor Server (tab/tablet).
+// Permette a un tablet di notificare in tempo reale tutti gli altri quando lo stato cambia.
+builder.Services.AddSingleton<BeachBar.Services.IDashboardEventService, BeachBar.Services.DashboardEventService>();
 
 // ── Autenticazione ─────────────────────────────────────────────────────────
 // Due schemi in parallelo:

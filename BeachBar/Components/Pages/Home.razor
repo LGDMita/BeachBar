@@ -1,8 +1,10 @@
 @page "/"
 @attribute [Authorize]
+@implements IAsyncDisposable
 @inject BeachBar.Infrastructure.Services.ISessioniService Sessioni
 @inject BeachBar.Infrastructure.Services.IImpostazioniService Impostazioni
 @inject BeachBar.Services.DateContext DateCtx
+@inject BeachBar.Services.IDashboardEventService Events
 @inject NavigationManager Nav
 
 <div class="dashboard">
@@ -238,7 +240,22 @@
     private string? nomeContoExtra;
     private string? ombrelloneExtraStr;
 
-    protected override async Task OnInitializedAsync() => await CaricaDati();
+    protected override async Task OnInitializedAsync()
+    {
+        // Sottoscrizione all'evento singleton: quando un altro tablet modifica lo stato,
+        // InvokeAsync garantisce che StateHasChanged venga chiamato sul thread del circuito corretto.
+        Events.OnStateChanged += OnExternalStateChanged;
+        await CaricaDati();
+    }
+
+    private async void OnExternalStateChanged()
+        => await InvokeAsync(async () => { await CaricaDati(); StateHasChanged(); });
+
+    public ValueTask DisposeAsync()
+    {
+        Events.OnStateChanged -= OnExternalStateChanged;
+        return ValueTask.CompletedTask;
+    }
 
     private async Task CaricaDati()
     {

@@ -32,10 +32,12 @@ public class ConsumazioniService : IConsumazioniService
 
     public async Task<Consumazione> AggiungiConsumazioneConQuantitaAsync(int sessioneId, int prodottoId, int quantita)
     {
-        var consumazione = await _db.Consumazioni
-            .FirstOrDefaultAsync(c => c.SessioneId == sessioneId && c.ProdottoId == prodottoId);
-
+        // Giorno incluso nel lookup: senza di esso un prodotto del giorno precedente (soggiorno
+        // multi-giorno) verrebbe incrementato invece di crearne uno nuovo per oggi.
         var oggi = DateOnly.FromDateTime(DateTime.Today);
+        var consumazione = await _db.Consumazioni
+            .FirstOrDefaultAsync(c => c.SessioneId == sessioneId && c.ProdottoId == prodottoId && c.Giorno == oggi);
+
         if (consumazione != null)
         {
             consumazione.Quantita += quantita;

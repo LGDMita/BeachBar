@@ -538,6 +538,52 @@
     flex: 2;
 }
 
+/* ─── Pannelli di conferma azione ────────────── */
+
+.btn-annulla-rosso {
+    background-color: #f8d7da;
+    color: #721c24;
+}
+
+.conferma-pannello {
+    padding: 12px;
+    border-radius: 10px;
+    text-align: center;
+}
+
+.conferma-pannello-verde  { background: #d4edda; }
+.conferma-pannello-giallo { background: #fff9e6; }
+.conferma-pannello-arancio { background: #fff3cd; }
+
+.conferma-testo {
+    margin: 0 0 8px;
+    font-weight: bold;
+    font-size: 0.88rem;
+}
+
+.conferma-testo-verde  { color: #155724; }
+.conferma-testo-giallo { color: #856404; }
+
+.conferma-bottoni {
+    display: flex;
+    gap: 8px;
+}
+
+.conferma-btn-si,
+.conferma-btn-no {
+    flex: 1;
+    border: none;
+    padding: 9px;
+    border-radius: 8px;
+    font-size: 0.88rem;
+    cursor: pointer;
+}
+
+.conferma-btn-verde  { background: #a2e67c; color: #155724; font-weight: 600; }
+.conferma-btn-giallo { background: #ffc107; color: #212529; font-weight: 600; }
+.conferma-btn-rosso  { background: #dc3545; color: white; }
+.conferma-btn-no     { background: #6c757d; color: white; }
+
 /* Area azioni in fondo alla lista */
 .azioni-scontrino {
     display: flex;
@@ -552,9 +598,24 @@
 }
 
 .nome-cliente-container {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
     margin-bottom: 10px;
     padding: 5px 0;
     border-bottom: 1px solid #eee;
+}
+
+.nome-cliente {
+    margin: 0;
+}
+
+.btn-salva-nome {
+    background: none;
+    border: none;
+    cursor: pointer;
+    font-size: 1.1rem;
+    flex-shrink: 0;
 }
 
 .btn-edit {

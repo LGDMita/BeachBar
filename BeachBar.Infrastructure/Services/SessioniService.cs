@@ -158,6 +158,13 @@ public class SessioniService : ISessioniService
         var ombrellone = await _db.Ombrelloni.FindAsync(ombrelloneId)
             ?? throw new InvalidOperationException($"Ombrellone {ombrelloneId} non trovato.");
 
+        // Guard server-side: verifica conflitti prima di scrivere qualsiasi cosa sul DB.
+        // La UI fa lo stesso controllo, ma due tablet concorrenti potrebbero superarlo entrambi.
+        var dataFineCheck = giorni > 1 ? dataRiferimento.AddDays(giorni - 1) : dataRiferimento;
+        var conflitti = await GetGiorniOccupatiAsync(ombrelloneId, dataRiferimento, dataFineCheck);
+        if (conflitti.Count > 0)
+            throw new InvalidOperationException("L'ombrellone è già prenotato in alcune date del periodo selezionato.");
+
         var oggi = DateOnly.FromDateTime(DateTime.Today);
         // Marca l'ombrellone occupato solo se il soggiorno include oggi:
         // le prenotazioni future non devono toccare il flag DB finché il cliente non è arrivato.

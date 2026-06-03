@@ -201,5 +201,24 @@ public class BeachBarDbContext : DbContext
                 BordiOrizzontali = null
             }
         );
+
+        // ── Indici compositi per le query più frequenti ────────────────────────
+        // Sessioni viene interrogata quasi sempre per data + stato: senza questi indici
+        // la tabella viene scansionata per intero ad ogni caricamento della dashboard.
+
+        // Dashboard e GetOmbrelloniAsync: filtra per ombrellone, stato aperto, intervallo date
+        modelBuilder.Entity<Sessione>()
+            .HasIndex(s => new { s.OmbrelloneId, s.Chiusa, s.DataRiferimento, s.DataFine })
+            .HasDatabaseName("IX_Sessioni_OmbrelloneId_Chiusa_Date");
+
+        // Statistiche e storico: filtra per data e stato (prescinde dall'ombrellone)
+        modelBuilder.Entity<Sessione>()
+            .HasIndex(s => new { s.Chiusa, s.DataRiferimento })
+            .HasDatabaseName("IX_Sessioni_Chiusa_DataRiferimento");
+
+        // GetGiorniOccupatiAsync e AggiungiConsumazione: lookup per sessione + prodotto + giorno
+        modelBuilder.Entity<Consumazione>()
+            .HasIndex(c => new { c.SessioneId, c.ProdottoId, c.Giorno })
+            .HasDatabaseName("IX_Consumazioni_Sessione_Prodotto_Giorno");
     }
 }

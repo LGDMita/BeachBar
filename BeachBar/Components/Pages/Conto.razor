@@ -4,6 +4,7 @@
 @inject BeachBar.Infrastructure.Services.IProdottiService Prodotti
 @inject BeachBar.Infrastructure.Services.IConsumazioniService Consumazioni
 @inject BeachBar.Services.DateContext DateCtx
+@inject BeachBar.Services.IDashboardEventService Events
 @inject NavigationManager Nav
 
 <div class="scheda-layout">
@@ -44,16 +45,16 @@
 
             @if (sessione != null)
             {
-                <div class="nome-cliente-container" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
+                <div class="nome-cliente-container">
                     @if (isEditingNome)
                     {
                         <input class="input-nome" @bind="nuovoNome" @onkeyup="@(async (e) => { if (e.Key == "Enter") await SalvaNome(); })" />
-                        <button @onclick="SalvaNome" style="background:none; border:none; cursor:pointer;">✔️</button>
+                        <button class="btn-salva-nome" @onclick="SalvaNome">✔️</button>
                     }
                     else
                     {
-                        <p class="nome-cliente" style="margin:0;">@(sessione.NomeCliente ?? "Cliente anonimo")</p>
-                        <button class="btn-edit" @onclick="IniziaModifica" style="background: transparent; border: none; cursor: pointer;">✏️</button>
+                        <p class="nome-cliente">@(sessione.NomeCliente ?? "Cliente anonimo")</p>
+                        <button class="btn-edit" @onclick="IniziaModifica">✏️</button>
                     }
                 </div>
 
@@ -155,38 +156,37 @@
                     {
                         <button class="btn-chiudi" @onclick='() => ChiudiSessione(false)'>Chiudi e incassa</button>
                     }
-                    <button class="btn-annulla" @onclick="() => conferma = ConfermaStato.Annulla"
-                            style="background-color: #f8d7da; color: #721c24;">
+                    <button class="btn-annulla btn-annulla-rosso" @onclick="() => conferma = ConfermaStato.Annulla">
                         Annulla lista
                     </button>
                 }
                 else if (conferma == ConfermaStato.ChiudiOmbrellone)
                 {
-                    <div class="conferma-annulla" style="background:#d4edda; padding:12px; border-radius:10px; text-align:center;">
-                        <p style="margin-bottom:8px; color:#155724; font-weight:bold; font-size:0.9rem;">Il conto viene incassato e l'ombrellone liberato.</p>
-                        <div style="display:flex; gap:8px;">
-                            <button @onclick='() => ChiudiSessione(true)' style="flex:1; background:#a2e67c; color:#155724; border:none; padding:9px; border-radius:8px; font-size:0.88rem; font-weight:600;">Conferma</button>
-                            <button @onclick="() => conferma = ConfermaStato.Nessuna" style="flex:1; background:#6c757d; color:white; border:none; padding:9px; border-radius:8px; font-size:0.88rem;">Annulla</button>
+                    <div class="conferma-pannello conferma-pannello-verde">
+                        <p class="conferma-testo conferma-testo-verde">Il conto viene incassato e l'ombrellone liberato.</p>
+                        <div class="conferma-bottoni">
+                            <button class="conferma-btn-si conferma-btn-verde" @onclick='() => ChiudiSessione(true)'>Conferma</button>
+                            <button class="conferma-btn-no" @onclick="() => conferma = ConfermaStato.Nessuna">Annulla</button>
                         </div>
                     </div>
                 }
                 else if (conferma == ConfermaStato.ChiudiLista)
                 {
-                    <div class="conferma-annulla" style="background:#fff9e6; padding:12px; border-radius:10px; text-align:center;">
-                        <p style="margin-bottom:8px; color:#856404; font-weight:bold; font-size:0.9rem;">Il conto viene incassato. Il posto resta occupato per domani.</p>
-                        <div style="display:flex; gap:8px;">
-                            <button @onclick='() => ChiudiSessione(false)' style="flex:1; background:#ffc107; color:#212529; border:none; padding:9px; border-radius:8px; font-size:0.88rem; font-weight:600;">Conferma</button>
-                            <button @onclick="() => conferma = ConfermaStato.Nessuna" style="flex:1; background:#6c757d; color:white; border:none; padding:9px; border-radius:8px; font-size:0.88rem;">Annulla</button>
+                    <div class="conferma-pannello conferma-pannello-giallo">
+                        <p class="conferma-testo conferma-testo-giallo">Il conto viene incassato. Il posto resta occupato per domani.</p>
+                        <div class="conferma-bottoni">
+                            <button class="conferma-btn-si conferma-btn-giallo" @onclick='() => ChiudiSessione(false)'>Conferma</button>
+                            <button class="conferma-btn-no" @onclick="() => conferma = ConfermaStato.Nessuna">Annulla</button>
                         </div>
                     </div>
                 }
                 else
                 {
-                    <div class="conferma-annulla" style="background:#fff3cd; padding:12px; border-radius:10px; text-align:center;">
-                        <p style="margin-bottom:8px; color:#856404; font-weight:bold; font-size:0.9rem;">Confermi l'annullamento?</p>
-                        <div style="display:flex; gap:8px;">
-                            <button @onclick="EseguiAnnulla" style="flex:1; background:#dc3545; color:white; border:none; padding:9px; border-radius:8px; font-size:0.88rem;">Sì</button>
-                            <button @onclick="() => conferma = ConfermaStato.Nessuna" style="flex:1; background:#6c757d; color:white; border:none; padding:9px; border-radius:8px; font-size:0.88rem;">No</button>
+                    <div class="conferma-pannello conferma-pannello-arancio">
+                        <p class="conferma-testo conferma-testo-giallo">Confermi l'annullamento?</p>
+                        <div class="conferma-bottoni">
+                            <button class="conferma-btn-si conferma-btn-rosso" @onclick="EseguiAnnulla">Sì</button>
+                            <button class="conferma-btn-no" @onclick="() => conferma = ConfermaStato.Nessuna">No</button>
                         </div>
                     </div>
                 }
@@ -245,23 +245,40 @@
     private async Task Aggiungi(int prodottoId)
     {
         errore = null;
-        try
-        {
-            await Consumazioni.AggiungiConsumazione(sessione!.Id, prodottoId, DateCtx.DataSelezionata);
-            sessione = await Sessioni.GetSessioneByIdAsync(Id);
-        }
-        catch (Exception ex) { errore = $"Impossibile aggiungere il prodotto: {ex.Message}"; }
+        // Aggiornamento ottimistico: modifica il modello locale prima della chiamata DB.
+        // L'UI risponde istantaneamente; se il salvataggio fallisce si ripristina dal DB.
+        var prodotto = prodotti.First(p => p.Id == prodottoId);
+        var oggi = DateCtx.DataSelezionata;
+        var existing = sessione!.Consumazioni.FirstOrDefault(c => c.ProdottoId == prodottoId && c.Giorno == oggi);
+        if (existing != null)
+            existing.Quantita++;
+        else
+            sessione.Consumazioni.Add(new BeachBar.Core.Entities.Consumazione
+            {
+                ProdottoId = prodottoId,
+                Prodotto = prodotto,
+                Quantita = 1,
+                Giorno = oggi,
+                SessioneId = sessione.Id
+            });
+
+        try { await Consumazioni.AggiungiConsumazione(sessione.Id, prodottoId, oggi); }
+        catch (Exception ex) { errore = $"Impossibile aggiungere il prodotto: {ex.Message}"; sessione = await Sessioni.GetSessioneByIdAsync(Id); }
     }
 
     private async Task Rimuovi(int prodottoId, DateOnly giorno)
     {
         errore = null;
-        try
+        // Aggiornamento ottimistico: modifica locale immediata, rollback su errore.
+        var cons = sessione!.Consumazioni.FirstOrDefault(c => c.ProdottoId == prodottoId && c.Giorno == giorno);
+        if (cons != null)
         {
-            await Consumazioni.RimuoviConsumazione(sessione!.Id, prodottoId, giorno);
-            sessione = await Sessioni.GetSessioneByIdAsync(Id);
+            if (cons.Quantita > 1) cons.Quantita--;
+            else sessione.Consumazioni.Remove(cons);
         }
-        catch (Exception ex) { errore = $"Impossibile rimuovere il prodotto: {ex.Message}"; }
+
+        try { await Consumazioni.RimuoviConsumazione(sessione.Id, prodottoId, giorno); }
+        catch (Exception ex) { errore = $"Impossibile rimuovere il prodotto: {ex.Message}"; sessione = await Sessioni.GetSessioneByIdAsync(Id); }
     }
 
     private async Task ChiudiSessione(bool liberaOmbrellone)
@@ -270,14 +287,24 @@
         // liberaOmbrellone=false → "Chiudi lista e incassa": il cliente fisso resta segnato come
         // occupato anche senza lista aperta, pronto per riaprire il giorno successivo.
         errore = null;
-        try { await Sessioni.ChiudiSessioneAsync(sessione!.Id, liberaOmbrellone); Nav.NavigateTo("/"); }
+        try
+        {
+            await Sessioni.ChiudiSessioneAsync(sessione!.Id, liberaOmbrellone);
+            Events.NotifyStateChanged();
+            Nav.NavigateTo("/");
+        }
         catch (Exception ex) { errore = $"Impossibile chiudere la lista: {ex.Message}"; }
     }
 
     private async Task EseguiAnnulla()
     {
         errore = null;
-        try { await Sessioni.AnnullaSessioneAsync(sessione!.Id); Nav.NavigateTo("/"); }
+        try
+        {
+            await Sessioni.AnnullaSessioneAsync(sessione!.Id);
+            Events.NotifyStateChanged();
+            Nav.NavigateTo("/");
+        }
         catch (Exception ex) { conferma = ConfermaStato.Nessuna; errore = $"Impossibile annullare la lista: {ex.Message}"; }
     }
 }

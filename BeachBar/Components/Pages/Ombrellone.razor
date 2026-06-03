@@ -2,6 +2,7 @@
 @attribute [Authorize]
 @inject BeachBar.Infrastructure.Services.ISessioniService Sessioni
 @inject BeachBar.Services.DateContext DateCtx
+@inject BeachBar.Services.IDashboardEventService Events
 @inject NavigationManager Nav
 <div class="dashboard ombrellone-pagina">
     <h2 class="ombrellone-titolo">Ombrellone @Id</h2>
@@ -193,6 +194,7 @@
         {
             var giorni = dataFine.DayNumber - dataInizio.DayNumber + 1;
             var nuova = await Sessioni.ApriSessioneAsync(Id, nomeCliente, dataInizio, giorni);
+            Events.NotifyStateChanged();
             Nav.NavigateTo("/conto/" + nuova.Id);
         }
         catch (Exception ex)
@@ -204,7 +206,7 @@
     private async Task LiberaOmbrellone()
     {
         errore = null;
-        try { await Sessioni.LiberaOmbrelloneAsync(Id); Nav.NavigateTo("/"); }
+        try { await Sessioni.LiberaOmbrelloneAsync(Id); Events.NotifyStateChanged(); Nav.NavigateTo("/"); }
         catch (Exception ex) { errore = $"Impossibile liberare l'ombrellone: {ex.Message}"; }
     }
 }

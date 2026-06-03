@@ -1,0 +1,283 @@
+@* Sub-componente della pagina Impostazioni — sezione "Prodotti".
+   Gestisce il CRUD di categorie e prodotti del listino. *@
+@inject BeachBar.Infrastructure.Services.IProdottiService Prodotti
+
+@* ── Gestione categorie ── *@
+<div class="sezione-card">
+    <h3>Categorie</h3>
+    <p class="sezione-desc">Aggiungi, rinomina o elimina le categorie. Eliminare una categoria rimuove anche tutti i prodotti al suo interno.</p>
+    <div class="lista-categorie">
+        @foreach (var cat in categorie)
+        {
+            <div class="riga-categoria">
+                @if (categoriaInModifica == cat)
+                {
+                    <input class="input-inline" @bind="nuovoNomeCategoria" />
+                    <button class="btn-sm btn-ok" @onclick="() => SalvaCategoria(cat)">✓</button>
+                    <button class="btn-sm btn-annulla" @onclick="() => categoriaInModifica = null">✕</button>
+                }
+                else
+                {
+                    <span class="cat-nome">@cat</span>
+                    <button class="btn-sm btn-modifica" @onclick="() => ModificaCategoria(cat)">✏️</button>
+                    <button class="btn-sm btn-elimina" @onclick="() => ConfermaEliminaCategoria(cat)">🗑️</button>
+                }
+            </div>
+        }
+        <div class="riga-categoria riga-nuova-categoria">
+            <input class="input-inline" placeholder="Nuova categoria..." @bind="nuovaCategoriaInput" @onkeydown="NuovaCategoriaKeyDown" />
+            <button class="btn-sm btn-ok" @onclick="AggiungiCategoria">+</button>
+        </div>
+    </div>
+    @if (confermaCancellaCategoria != null)
+    {
+        <div class="alert-conferma">
+            <p>Eliminare la categoria <strong>@confermaCancellaCategoria</strong> e tutti i suoi prodotti?</p>
+            <button class="btn-conferma-si" @onclick="EliminaCategoria">Sì, elimina</button>
+            <button class="btn-conferma-no" @onclick="() => confermaCancellaCategoria = null">Annulla</button>
+        </div>
+    }
+</div>
+
+@* ── Aggiungi nuovo prodotto ── *@
+<div class="sezione-card aggiungi-prodotto-card">
+    <h3>Aggiungi prodotto</h3>
+    <div class="form-nuovo-prodotto">
+        <div class="campo-prodotto campo-prodotto-nome">
+            <label class="campo-label">Nome</label>
+            <input class="input-testo" placeholder="es. Birra Media" @bind="nuovoProdottoNome" />
+        </div>
+        <div class="campo-prodotto">
+            <label class="campo-label">Prezzo (€)</label>
+            <div class="input-con-prefisso">
+                <span class="input-prefisso">€</span>
+                <input type="number" class="input-numero" placeholder="0.00" @bind="nuovoProdottoPrezzo" step="0.01" min="0" />
+            </div>
+        </div>
+        <div class="campo-prodotto">
+            <label class="campo-label">Categoria</label>
+            <select class="input-select" @bind="nuovoProdottoCategoria">
+                @foreach (var cat in categorie)
+                {
+                    <option value="@cat">@cat</option>
+                }
+            </select>
+        </div>
+        <div class="campo-prodotto campo-prodotto-azione">
+            <label class="campo-label">&nbsp;</label>
+            <button class="btn-salva" style="margin-top:0;" @onclick="AggiuntaProdotto">+ Aggiungi</button>
+        </div>
+    </div>
+</div>
+
+@* ── Lista prodotti per categoria ── *@
+<div class="sezione-card">
+    <div class="prodotti-toolbar">
+        <input class="prodotti-search"
+               type="search"
+               placeholder="Cerca prodotto per nome..."
+               @bind-value="prodottoFiltro"
+               @bind-value:event="oninput" />
+        <span class="prodotti-count">@ProdottiVisibili.Count() prodotti</span>
+    </div>
+    <div class="prodotti-filtri">
+        <button class="chip @(filtroCat == "" ? "chip-on" : "")" @onclick='() => filtroCat = ""'>Tutte</button>
+        @foreach (var cat in categorie)
+        {
+            <button class="chip @(filtroCat == cat ? "chip-on" : "")" @onclick='() => filtroCat = cat'>@cat</button>
+        }
+    </div>
+
+    @foreach (var cat in CategorieVisibili)
+    {
+        var prodCat = ProdottiVisibili.Where(p => p.Categoria == cat).ToList();
+        if (!prodCat.Any()) continue;
+
+        <div class="prodotti-cat-sezione">
+            <div class="prodotti-cat-header">
+                <span class="prodotti-cat-titolo">@cat</span>
+                <span class="prodotti-cat-count">@prodCat.Count</span>
+            </div>
+            <div class="prodotti-griglia">
+                @foreach (var p in prodCat)
+                {
+                    @if (prodottoInModifica == p.Id)
+                    {
+                        <div class="prodotto-card prodotto-card-edit">
+                            <input class="input-inline" @bind="editNome" placeholder="Nome" />
+                            <div class="prodotto-edit-row">
+                                <div class="input-con-prefisso" style="flex:0 0 90px;">
+                                    <span class="input-prefisso">€</span>
+                                    <input type="number" class="input-inline" @bind="editPrezzo" step="0.01" style="padding-left:22px;" />
+                                </div>
+                                <select class="input-inline" @bind="editCategoria" style="flex:1;">
+                                    @foreach (var c in categorie)
+                                    {
+                                        <option value="@c">@c</option>
+                                    }
+                                </select>
+                            </div>
+                            <label class="prodotto-disp-check">
+                                <input type="checkbox" @bind="editDisponibile" />
+                                <span>Disponibile</span>
+                            </label>
+                            <div class="prodotto-card-azioni">
+                                <button class="btn-sm btn-ok" @onclick="() => SalvaProdotto(p.Id)">✓ Salva</button>
+                                <button class="btn-sm btn-annulla" @onclick="() => prodottoInModifica = null">✕</button>
+                            </div>
+                        </div>
+                    }
+                    else
+                    {
+                        <div class="prodotto-card @(p.Disponibile ? "" : "prodotto-non-disp")">
+                            <div class="prodotto-header">
+                                <span class="prodotto-nome">@p.Nome</span>
+                                <span class="prodotto-prezzo-badge">€ @p.Prezzo.ToString("0.00")</span>
+                            </div>
+                            <div class="prodotto-meta">
+                                <span class="@(p.Disponibile ? "prodotto-disp-si" : "prodotto-disp-no")">
+                                    @(p.Disponibile ? "disponibile" : "non disp.")
+                                </span>
+                            </div>
+                            <div class="prodotto-card-azioni">
+                                <button class="btn-sm btn-modifica" @onclick="() => ModificaProdotto(p)">✏️</button>
+                                <button class="btn-sm btn-elimina" @onclick="() => EliminaProdotto(p.Id)">🗑️</button>
+                            </div>
+                        </div>
+                    }
+                }
+            </div>
+        </div>
+    }
+</div>
+
+@if (errore != null)
+{
+    <div class="alert-errore">⚠️ @errore</div>
+}
+
+@code {
+    private List<BeachBar.Core.Entities.Prodotto> prodottiLista = new();
+    private List<string> categorie = new();
+    private string prodottoFiltro = "";
+    private string filtroCat = "";
+    private string? categoriaInModifica;
+    private string? nuovoNomeCategoria;
+    private string nuovaCategoriaInput = "";
+    private string? confermaCancellaCategoria;
+    private string nuovoProdottoNome = "";
+    private decimal nuovoProdottoPrezzo;
+    private string nuovoProdottoCategoria = "";
+    private int? prodottoInModifica;
+    private string editNome = "";
+    private decimal editPrezzo;
+    private string editCategoria = "";
+    private bool editDisponibile;
+    private string? errore;
+
+    private IEnumerable<BeachBar.Core.Entities.Prodotto> ProdottiVisibili =>
+        prodottiLista
+            .Where(p => string.IsNullOrEmpty(filtroCat) || p.Categoria == filtroCat)
+            .Where(p => string.IsNullOrWhiteSpace(prodottoFiltro) ||
+                        p.Nome.Contains(prodottoFiltro, StringComparison.OrdinalIgnoreCase));
+
+    private IEnumerable<string> CategorieVisibili =>
+        string.IsNullOrEmpty(filtroCat) ? categorie : categorie.Where(c => c == filtroCat);
+
+    protected override async Task OnInitializedAsync()
+    {
+        try { await CaricaProdotti(); }
+        catch (Exception ex) { errore = $"Impossibile caricare i prodotti: {ex.Message}"; }
+    }
+
+    private async Task CaricaProdotti()
+    {
+        prodottiLista = await Prodotti.GetTuttiProdottiAsync();
+        categorie = await Prodotti.GetCategorieAsync();
+    }
+
+    private void AggiungiCategoria()
+    {
+        var nome = nuovaCategoriaInput.Trim();
+        if (string.IsNullOrEmpty(nome) || categorie.Contains(nome, StringComparer.OrdinalIgnoreCase)) return;
+        categorie.Add(nome);
+        nuovoProdottoCategoria = nome;
+        nuovaCategoriaInput = "";
+    }
+
+    private void NuovaCategoriaKeyDown(KeyboardEventArgs e)
+    {
+        if (e.Key == "Enter") AggiungiCategoria();
+    }
+
+    private void ModificaCategoria(string cat) { categoriaInModifica = cat; nuovoNomeCategoria = cat; }
+
+    private async Task SalvaCategoria(string vecchia)
+    {
+        errore = null;
+        try
+        {
+            if (!string.IsNullOrWhiteSpace(nuovoNomeCategoria))
+                await Prodotti.RinominaCategoriaAsync(vecchia, nuovoNomeCategoria!);
+            categoriaInModifica = null;
+            await CaricaProdotti();
+        }
+        catch (Exception ex) { categoriaInModifica = null; errore = $"Errore: {ex.Message}"; }
+    }
+
+    private void ConfermaEliminaCategoria(string cat) => confermaCancellaCategoria = cat;
+
+    private async Task EliminaCategoria()
+    {
+        errore = null;
+        try
+        {
+            await Prodotti.EliminaCategoriaAsync(confermaCancellaCategoria!);
+            confermaCancellaCategoria = null;
+            await CaricaProdotti();
+        }
+        catch (Exception ex) { confermaCancellaCategoria = null; errore = $"Errore: {ex.Message}"; }
+    }
+
+    private async Task AggiuntaProdotto()
+    {
+        if (string.IsNullOrWhiteSpace(nuovoProdottoNome)) return;
+        errore = null;
+        try
+        {
+            await Prodotti.AggiuntaProdottoAsync(nuovoProdottoNome, nuovoProdottoPrezzo, nuovoProdottoCategoria);
+            nuovoProdottoNome = "";
+            nuovoProdottoPrezzo = 0;
+            await CaricaProdotti();
+        }
+        catch (Exception ex) { errore = $"Errore: {ex.Message}"; }
+    }
+
+    private void ModificaProdotto(BeachBar.Core.Entities.Prodotto p)
+    {
+        prodottoInModifica = p.Id;
+        editNome = p.Nome;
+        editPrezzo = p.Prezzo;
+        editCategoria = p.Categoria;
+        editDisponibile = p.Disponibile;
+    }
+
+    private async Task SalvaProdotto(int id)
+    {
+        errore = null;
+        try
+        {
+            await Prodotti.AggiornaProdottoAsync(id, editNome, editPrezzo, editCategoria, editDisponibile);
+            prodottoInModifica = null;
+            await CaricaProdotti();
+        }
+        catch (Exception ex) { prodottoInModifica = null; errore = $"Errore: {ex.Message}"; }
+    }
+
+    private async Task EliminaProdotto(int id)
+    {
+        errore = null;
+        try { await Prodotti.EliminaProdottoAsync(id); await CaricaProdotti(); }
+        catch (Exception ex) { errore = $"Errore: {ex.Message}"; }
+    }
+}
