@@ -34,6 +34,12 @@
         </div>
     </div>
 
+    <div class="legenda-colori">
+        <span class="legenda-item"><span class="legenda-dot occupato"></span>Con lista</span>
+        <span class="legenda-item"><span class="legenda-dot occupato-senza-lista"></span>Senza lista</span>
+        <span class="legenda-item"><span class="legenda-dot libero"></span>Libero</span>
+    </div>
+
     @if (errore != null)
     {
         <div class="alert-errore">⚠️ @errore</div>
@@ -73,17 +79,9 @@
                                     {
                                         <span class="stato">@omb.Sessioni.Count conti</span>
                                     }
-                                    else if (haLista)
+                                    else if (!haLista && (!omb.Occupato || string.IsNullOrWhiteSpace(omb.NomeClienteAttivo)))
                                     {
-                                        <span class="stato">Con lista</span>
-                                    }
-                                    else if (omb.Occupato)
-                                    {
-                                        <span class="stato">Senza lista</span>
-                                    }
-                                    else
-                                    {
-                                        <span class="stato">Libero</span>
+                                        <span class="stato">@(omb.Occupato ? "Senza lista" : "Libero")</span>
                                     }
                                     <span class="omb-nome">@(omb.Sessioni.Count == 1 ? omb.Sessioni.First().NomeCliente : omb.NomeClienteAttivo)</span>
                                 </button>
@@ -123,7 +121,7 @@
     {
         @* Layout sequenziale classico (nessun bordo, nessuna posizione custom) *@
         <div class="griglia-wrapper">
-            <div class="griglia" style="grid-template-columns: repeat(@colonne, 88px);">
+            <div class="griglia" style="grid-template-columns: repeat(@colonne, 1fr);">
                 @foreach (var o in ombrelloni)
                 {
                     var haLista = umbrelleConProdotti.Contains(o.Id);
@@ -134,19 +132,11 @@
                         {
                             <span class="stato">@o.Sessioni.Count conti</span>
                         }
-                        else if (haLista)
+                        else if (!haLista && (!o.Occupato || string.IsNullOrWhiteSpace(o.NomeClienteAttivo)))
                         {
-                            <span class="stato">Con lista</span>
+                            <span class="stato">@(o.Occupato ? "Senza lista" : "Libero")</span>
                         }
-                        else if (o.Occupato)
-                        {
-                            <span class="stato">Senza lista</span>
-                        }
-                        else
-                        {
-                            <span class="stato">Libero</span>
-                        }
-                        <span class="omb-nome">@(o.Sessioni.Count == 1 ? o.Sessioni.First().NomeCliente : null)</span>
+                        <span class="omb-nome">@(o.Sessioni.Count == 1 ? o.Sessioni.First().NomeCliente : o.NomeClienteAttivo)</span>
                     </button>
                 }
             </div>

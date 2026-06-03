@@ -1,7 +1,7 @@
 /* ─── Contenitore pagina ─────────────────────── */
 
 .dashboard {
-    padding: 20px;
+    padding: 10px;
     max-width: 1400px;
     margin: 0 auto;
 }
@@ -11,29 +11,29 @@
 .statistiche {
     display: grid;
     grid-template-columns: repeat(3, 1fr);
-    gap: 16px;
-    margin-bottom: 28px;
+    gap: 8px;
+    margin-bottom: 10px;
 }
 
 .stat-card {
     background: white;
-    border-radius: 16px;
-    padding: 20px;
+    border-radius: 12px;
+    padding: 10px 8px;
     display: flex;
     flex-direction: column;
     align-items: center;
-    gap: 6px;
+    gap: 2px;
     box-shadow: 0 1px 4px rgba(0,0,0,0.06);
 }
 
 .stat-valore {
-    font-size: 1.6rem;
+    font-size: 1.15rem;
     font-weight: bold;
     color: #333;
 }
 
 .stat-label {
-    font-size: 0.85rem;
+    font-size: 0.68rem;
     color: #888;
 }
 
@@ -45,21 +45,20 @@
 
 .griglia {
     display: grid;
-    gap: 12px;
-    width: fit-content;
-    margin: 0 auto;
+    gap: 6px;
+    width: 100%;
 }
 
 .ombrellone {
     border: none;
-    border-radius: 12px;
-    padding: 16px 8px;
-    font-size: 0.92rem;
+    border-radius: 9px;
+    padding: 8px 4px;
+    font-size: 0.78rem;
     cursor: pointer;
     display: flex;
     flex-direction: column;
     align-items: center;
-    gap: 5px;
+    gap: 2px;
     transition: transform 0.1s;
 }
 
@@ -68,24 +67,24 @@
     }
 
 .numero {
-    font-size: 1.5rem;
+    font-size: 1.05rem;
     font-weight: bold;
 }
 
 .stato {
-    font-size: 0.76rem;
+    font-size: 0.6rem;
 }
 
 /* Nome cliente sull'ombrellone — prefisso omb- per evitare conflitti con ombrellone.css.
    Sempre presente nel DOM (anche vuoto) per mantenere altezza uniforme tra le celle. */
 .omb-nome {
-    font-size: 0.78rem;
+    font-size: 0.64rem;
     max-width: 100%;
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
-    padding: 0 6px;
-    opacity: 0.8;
+    padding: 0 3px;
+    opacity: 0.85;
     min-height: 1em;
 }
 
@@ -109,34 +108,34 @@
 .griglia-custom {
     display: flex;
     flex-direction: column;
-    width: fit-content;
-    margin: 0 auto;
+    width: 100%;
 }
 
 .griglia-riga-custom {
     display: flex;
     align-items: stretch;
+    width: 100%;
 }
 
-/* Altezza fissa su entrambi — ombrelloni e placeholder sempre uguali */
+/* Altezza fissa, larghezza flessibile — ombrelloni e placeholder sempre uguali */
 .griglia-custom .ombrellone {
-    width: 88px;
-    height: 96px;
-    flex-shrink: 0;
+    flex: 1;
+    min-width: 0;
+    height: 70px;
 }
 
 .ombrellone-placeholder {
-    width: 88px;
-    height: 96px;
-    flex-shrink: 0;
-    border-radius: 12px;
+    flex: 1;
+    min-width: 0;
+    height: 70px;
+    border-radius: 9px;
     background: #e9ecef;
 }
 
 /* ─── Separatori di zona nella griglia ───────── */
 
 .griglia-sep-v {
-    width: 12px;
+    width: 6px;
     flex-shrink: 0;
     position: relative;
     display: flex;
@@ -155,7 +154,7 @@
 
 .griglia-sep-h-row {
     display: flex;
-    height: 12px;
+    height: 6px;
     position: relative;
 }
 
@@ -173,22 +172,47 @@
 }
 
 .griglia-sep-h-seg {
-    width: 88px;
-    flex-shrink: 0;
+    flex: 1;
+    min-width: 0;
 }
 
 .griglia-sep-corner {
-    width: 12px;
+    width: 6px;
     flex-shrink: 0;
+}
+
+/* ─── Legenda colori ─────────────────────────── */
+
+.legenda-colori {
+    display: flex;
+    gap: 12px;
+    margin-bottom: 8px;
+    flex-wrap: wrap;
+}
+
+.legenda-item {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    font-size: 0.66rem;
+    color: #555;
+}
+
+.legenda-dot {
+    width: 10px;
+    height: 10px;
+    border-radius: 3px;
+    flex-shrink: 0;
+    display: inline-block;
 }
 
 /* ─── Conti volanti ──────────────────────────── */
 
 .conti-extra-section {
-    margin-top: 32px;
+    margin-top: 12px;
     background: white;
-    border-radius: 20px;
-    padding: 20px 24px;
+    border-radius: 12px;
+    padding: 10px 12px;
     box-shadow: 0 1px 4px rgba(0,0,0,0.06);
 }
 
@@ -196,16 +220,16 @@
     display: flex;
     justify-content: space-between;
     align-items: center;
-    margin-bottom: 16px;
+    margin-bottom: 8px;
 }
 
 .conti-extra-titolo {
-    margin: 0 0 2px;
-    font-size: 1.1rem;
+    margin: 0 0 1px;
+    font-size: 0.9rem;
 }
 
 .conti-extra-subtitle {
-    font-size: 0.82rem;
+    font-size: 0.72rem;
     color: #adb5bd;
 }
 
@@ -213,9 +237,9 @@
     background: #198754;
     color: white;
     border: none;
-    border-radius: 10px;
-    padding: 9px 18px;
-    font-size: 0.9rem;
+    border-radius: 7px;
+    padding: 5px 11px;
+    font-size: 0.78rem;
     font-weight: 600;
     cursor: pointer;
     flex-shrink: 0;
@@ -223,11 +247,11 @@
 
 .nuovoconto-form {
     background: #f8f9fa;
-    border-radius: 12px;
-    padding: 14px;
-    margin-bottom: 16px;
+    border-radius: 9px;
+    padding: 9px;
+    margin-bottom: 8px;
     display: flex;
-    gap: 10px;
+    gap: 7px;
     align-items: center;
     flex-wrap: wrap;
 }
@@ -239,43 +263,43 @@
 }
 
 .nuovoconto-select {
-    padding: 10px 12px;
+    padding: 7px 9px;
     border: 2px solid #ccc;
-    border-radius: 10px;
-    font-size: 0.95rem;
+    border-radius: 7px;
+    font-size: 0.85rem;
     background: white;
     min-width: 160px;
 }
 
 .nuovoconto-azioni {
     display: flex;
-    gap: 8px;
+    gap: 7px;
     align-items: center;
 }
 
 .btn-annulla-form {
     background: #e9ecef;
     border: none;
-    border-radius: 8px;
-    padding: 10px 14px;
+    border-radius: 7px;
+    padding: 7px 9px;
     cursor: pointer;
-    font-size: 1rem;
+    font-size: 0.95rem;
 }
 
 .conti-extra-griglia {
     display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
-    gap: 10px;
+    grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+    gap: 7px;
 }
 
 .conto-extra-card {
     background: #f8f9fa;
-    border-radius: 12px;
-    padding: 14px 16px;
+    border-radius: 9px;
+    padding: 8px 10px;
     display: flex;
     justify-content: space-between;
     align-items: center;
-    gap: 12px;
+    gap: 8px;
 }
 
 .conto-extra-info {
@@ -284,26 +308,27 @@
 
 .conto-extra-nome {
     font-weight: 600;
+    font-size: 0.88rem;
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
 }
 
 .conto-extra-meta {
-    font-size: 0.82rem;
+    font-size: 0.72rem;
     color: #6c757d;
-    margin-top: 3px;
+    margin-top: 1px;
 }
 
 .conto-extra-btn {
-    padding: 9px 16px;
-    font-size: 1rem;
+    padding: 5px 10px;
+    font-size: 0.95rem;
     flex-shrink: 0;
 }
 
 .conti-extra-vuoto {
     color: #adb5bd;
-    font-size: 0.9rem;
+    font-size: 0.8rem;
     margin: 0;
 }
 
@@ -311,86 +336,93 @@
 
 @media (max-width: 1024px) {
     .dashboard {
-        padding: 14px;
+        padding: 8px;
     }
 
     .statistiche {
-        gap: 10px;
-        margin-bottom: 18px;
+        gap: 6px;
+        margin-bottom: 8px;
     }
 
     .stat-card {
-        padding: 12px 8px;
+        padding: 8px 6px;
     }
 
     .stat-valore {
-        font-size: 1.25rem;
+        font-size: 1rem;
     }
 
     .stat-label {
-        font-size: 0.78rem;
+        font-size: 0.64rem;
     }
 
     .griglia {
-        gap: 9px;
+        gap: 5px;
     }
 
     .ombrellone {
-        padding: 13px 6px;
-        gap: 4px;
+        padding: 7px 3px;
+        gap: 2px;
     }
 
     .numero {
-        font-size: 1.3rem;
+        font-size: 0.95rem;
     }
 
     .stato {
-        font-size: 0.72rem;
+        font-size: 0.56rem;
+    }
+
+    .omb-nome {
+        font-size: 0.6rem;
     }
 
     .griglia-custom .ombrellone {
-        width: 78px;
-        height: 86px;
+        height: 62px;
     }
 
     .ombrellone-placeholder {
-        width: 78px;
-        height: 86px;
+        height: 62px;
     }
 
     .griglia-sep-v {
-        width: 9px;
+        width: 5px;
     }
 
     .griglia-sep-h-row {
-        height: 9px;
-    }
-
-    .griglia-sep-h-seg {
-        width: 78px;
+        height: 5px;
     }
 
     .griglia-sep-corner {
-        width: 9px;
+        width: 5px;
+    }
+
+    .legenda-colori {
+        gap: 10px;
+        margin-bottom: 6px;
+    }
+
+    .legenda-item {
+        font-size: 0.6rem;
     }
 
     .conti-extra-section {
-        margin-top: 16px;
-        padding: 14px 16px;
-        border-radius: 14px;
+        margin-top: 8px;
+        padding: 8px 10px;
+        border-radius: 10px;
     }
 
     .conti-extra-header {
-        margin-bottom: 10px;
+        margin-bottom: 6px;
     }
 
     .btn-nuovo-conto {
-        padding: 7px 14px;
-        font-size: 0.85rem;
+        padding: 4px 9px;
+        font-size: 0.74rem;
     }
 
     .conto-extra-card {
-        padding: 10px 12px;
+        padding: 7px 9px;
     }
 }
 
@@ -398,47 +430,46 @@
 
 @media (max-width: 600px) {
     .dashboard {
-        padding: 12px;
+        padding: 7px;
     }
 
     .statistiche {
-        gap: 8px;
+        gap: 5px;
     }
 
     .stat-card {
-        padding: 12px 8px;
+        padding: 7px 5px;
     }
 
     .stat-valore {
-        font-size: 1.2rem;
+        font-size: 0.95rem;
     }
 
     .stat-label {
-        font-size: 0.75rem;
+        font-size: 0.62rem;
         text-align: center;
     }
 
     .griglia {
-        gap: 7px;
+        gap: 4px;
     }
 
     .ombrellone {
-        padding: 10px 4px;
-        font-size: 0.82rem;
+        padding: 6px 3px;
+        font-size: 0.72rem;
     }
 
     .griglia-custom .ombrellone,
     .ombrellone-placeholder {
-        width: 68px;
-        height: 76px;
+        height: 54px;
     }
 
     .numero {
-        font-size: 1.15rem;
+        font-size: 0.88rem;
     }
 
     .conti-extra-section {
-        padding: 16px;
+        padding: 8px;
     }
 
     .nuovoconto-form {

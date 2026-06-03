@@ -1,7 +1,7 @@
-﻿.scheda-layout {
+.scheda-layout {
     display: flex;
-    gap: 16px;
-    padding: 14px;
+    gap: 12px;
+    padding: 10px;
     height: var(--viewport-h);
     box-sizing: border-box;
 }
@@ -12,15 +12,15 @@
 }
 
 .colonna-destra {
-    width: 400px;
+    width: 360px;
     background: #f8f9fa;
-    border-radius: 16px;
-    padding: 16px;
+    border-radius: 14px;
+    padding: 12px;
     display: flex;
     flex-direction: column;
     position: sticky;
-    top: 14px;
-    height: calc(var(--viewport-h) - 28px);
+    top: 10px;
+    height: calc(var(--viewport-h) - 20px);
     box-sizing: border-box;
 }
 
@@ -29,64 +29,64 @@
     border: none;
     font-size: 1rem;
     cursor: pointer;
-    margin-bottom: 10px;
+    margin-bottom: 8px;
     color: #555;
 }
 
 /* ─── Pagina ombrellone (lista/prenotazione) ── */
 
 .ombrellone-pagina {
-    max-width: 560px;
+    max-width: 480px;
     margin: 0 auto;
 }
 
 .ombrellone-titolo {
-    font-size: 1.4rem;
+    font-size: 1.2rem;
     font-weight: 700;
     margin: 0 0 4px;
 }
 
 .ombrellone-data {
-    font-size: 0.85rem;
+    font-size: 0.82rem;
     color: #6c757d;
-    margin: 0 0 20px;
+    margin: 0 0 12px;
 }
 
 .ombrellone-sezione {
-    font-size: 1rem;
+    font-size: 0.95rem;
     font-weight: 600;
     color: #495057;
-    margin: 0 0 12px;
+    margin: 0 0 8px;
 }
 
 .ombrellone-hr {
     border: none;
     border-top: 1px solid #e9ecef;
-    margin: 20px 0;
+    margin: 14px 0;
 }
 
 .lista-card {
     background: white;
-    border-radius: 12px;
-    padding: 14px 16px;
-    margin-bottom: 10px;
+    border-radius: 10px;
+    padding: 10px 12px;
+    margin-bottom: 7px;
     box-shadow: 0 1px 4px rgba(0,0,0,0.07);
     display: flex;
     justify-content: space-between;
     align-items: center;
-    gap: 12px;
+    gap: 10px;
 }
 
 .lista-card-nome {
     font-weight: 600;
-    font-size: 0.97rem;
+    font-size: 0.93rem;
     color: #1e293b;
 }
 
 .lista-card-meta {
-    font-size: 0.8rem;
+    font-size: 0.78rem;
     color: #6c757d;
-    margin-top: 3px;
+    margin-top: 2px;
 }
 
 .btn-lista-apri {
@@ -94,8 +94,8 @@
     color: white;
     border: none;
     border-radius: 8px;
-    padding: 8px 16px;
-    font-size: 0.88rem;
+    padding: 6px 12px;
+    font-size: 0.84rem;
     font-weight: 600;
     cursor: pointer;
     white-space: nowrap;
@@ -109,19 +109,19 @@
 .nuova-lista-form {
     display: flex;
     flex-direction: column;
-    gap: 12px;
-    margin-bottom: 20px;
+    gap: 9px;
+    margin-bottom: 14px;
 }
 
 .giorni-row {
     display: flex;
     align-items: center;
-    gap: 12px;
+    gap: 10px;
     flex-wrap: wrap;
 }
 
 .giorni-label {
-    font-size: 0.9rem;
+    font-size: 0.88rem;
     color: #495057;
     font-weight: 500;
     white-space: nowrap;
@@ -129,7 +129,7 @@
 
 .input-giorni {
     width: 70px;
-    padding: 8px 10px;
+    padding: 6px 8px;
     border: 2px solid #ced4da;
     border-radius: 8px;
     font-size: 1rem;
@@ -137,19 +137,19 @@
 }
 
 .giorni-hint {
-    font-size: 0.82rem;
+    font-size: 0.8rem;
     color: #0d6efd;
     font-weight: 500;
 }
 
 .btn-apri-lista {
-    padding: 14px;
-    font-size: 1rem;
+    padding: 10px;
+    font-size: 0.95rem;
     font-weight: 600;
     background-color: #28a745;
     color: white;
     border: none;
-    border-radius: 12px;
+    border-radius: 10px;
     cursor: pointer;
     width: 100%;
 }
@@ -159,13 +159,13 @@
 }
 
 .btn-libera-spiaggia {
-    padding: 12px;
-    font-size: 0.95rem;
+    padding: 9px;
+    font-size: 0.9rem;
     font-weight: 600;
     background-color: #fd7e14;
     color: white;
     border: none;
-    border-radius: 12px;
+    border-radius: 10px;
     cursor: pointer;
     width: 100%;
     margin-bottom: 4px;
@@ -178,9 +178,9 @@
 .btn-torna-spiaggia {
     background: none;
     border: 1.5px solid #dee2e6;
-    border-radius: 10px;
-    padding: 10px 18px;
-    font-size: 0.9rem;
+    border-radius: 9px;
+    padding: 8px 14px;
+    font-size: 0.88rem;
     color: #6c757d;
     cursor: pointer;
     width: 100%;
@@ -194,47 +194,47 @@
 .apri-sessione {
     display: flex;
     flex-direction: column;
-    gap: 16px;
-    margin-top: 20px;
+    gap: 10px;
+    margin-top: 12px;
 }
 
 .input-nome {
-    padding: 14px;
-    font-size: 1.1rem;
+    padding: 10px;
+    font-size: 0.95rem;
     border: 2px solid #ccc;
-    border-radius: 12px;
+    border-radius: 10px;
 }
 
 .btn-apri {
-    padding: 16px;
-    font-size: 1.2rem;
+    padding: 10px;
+    font-size: 1rem;
     background-color: #28a745;
     color: white;
     border: none;
-    border-radius: 12px;
+    border-radius: 10px;
     cursor: pointer;
 }
 
 .nome-cliente {
-    font-size: 2rem;
+    font-size: 1.5rem;
     font-weight: bold;
     color: #555;
-    margin-bottom: 16px;
+    margin-bottom: 10px;
 }
 
 .categorie-tabs {
     display: flex;
-    gap: 7px;
-    margin-bottom: 14px;
+    gap: 6px;
+    margin-bottom: 10px;
     flex-wrap: wrap;
 }
 
 .tab {
-    padding: 8px 16px;
+    padding: 6px 12px;
     border: 2px solid #dee2e6;
-    border-radius: 20px;
+    border-radius: 18px;
     background: white;
-    font-size: 0.9rem;
+    font-size: 0.84rem;
     cursor: pointer;
     transition: all 0.15s;
 }
@@ -282,9 +282,9 @@
 
 .nome-cliente-scontrino {
     color: #888;
-    font-size: 0.9rem;
-    margin-top: -8px;
-    margin-bottom: 16px;
+    font-size: 0.88rem;
+    margin-top: -6px;
+    margin-bottom: 10px;
 }
 
 /* Lista a 2 colonne stile scontrino */
@@ -324,7 +324,7 @@
 .riga-nome {
     flex: 1;
     font-weight: 600;
-    font-size: 0.9rem;
+    font-size: 0.88rem;
     line-height: 1.25;
     overflow: hidden;
     display: -webkit-box;
@@ -333,7 +333,7 @@
 }
 
 .riga-qty {
-    font-size: 0.8rem;
+    font-size: 0.78rem;
     color: #888;
     white-space: nowrap;
     flex-shrink: 0;
@@ -348,7 +348,7 @@
 
 .riga-totale {
     font-weight: 700;
-    font-size: 0.92rem;
+    font-size: 0.9rem;
 }
 
 .btn-rimuovi {
@@ -365,55 +365,55 @@
 
 /* Intestazione e data conto */
 .conto-intestazione {
-    font-size: 1.2rem;
+    font-size: 1.05rem;
     font-weight: 700;
     margin: 0 0 4px;
 }
 
 .conto-data {
-    font-size: 0.82rem;
+    font-size: 0.8rem;
     color: #6c757d;
-    margin: 0 0 14px;
+    margin: 0 0 10px;
 }
 
 /* Raggruppamento per giorno nella lista multi-giorno */
 .lista-giorno-header {
-    font-size: 0.78rem;
+    font-size: 0.75rem;
     font-weight: 700;
     color: #6c757d;
     text-transform: uppercase;
     letter-spacing: 0.05em;
-    padding: 10px 0 4px;
+    padding: 7px 0 3px;
     border-top: 1px solid #e9ecef;
-    margin-top: 6px;
+    margin-top: 4px;
 }
 
 .lista-giorno-subtotale {
-    font-size: 0.82rem;
+    font-size: 0.8rem;
     color: #495057;
     font-weight: 600;
     text-align: right;
-    padding: 4px 0 8px;
+    padding: 3px 0 6px;
     border-bottom: 1px dashed #dee2e6;
 }
 
 .totale-scontrino {
-    font-size: 1.4rem;
+    font-size: 1.1rem;
     font-weight: bold;
-    padding: 16px 0;
+    padding: 10px 0;
     border-top: 2px solid #333;
-    margin-top: 8px;
+    margin-top: 6px;
 }
 
-/* Bottoni area azioni — padding ridotto rispetto all'originale per dare più spazio alla lista */
+/* Bottoni area azioni */
 .btn-torna-dashboard {
     width: 100%;
-    padding: 10px;
-    font-size: 0.92rem;
+    padding: 8px;
+    font-size: 0.88rem;
     background-color: #5bc0de;
     color: white;
     border: none;
-    border-radius: 10px;
+    border-radius: 9px;
     cursor: pointer;
     font-weight: 600;
 }
@@ -424,34 +424,34 @@
 
 .btn-chiudi {
     width: 100%;
-    padding: 10px;
-    font-size: 1rem;
+    padding: 8px;
+    font-size: 0.92rem;
     background-color: #a2e67c;
     color: white;
     border: none;
-    border-radius: 10px;
+    border-radius: 9px;
     cursor: pointer;
     flex: 2;
 }
 
 .btn-chiudi-lista {
     width: 100%;
-    padding: 10px;
-    font-size: 1rem;
+    padding: 8px;
+    font-size: 0.92rem;
     background-color: #ffc107;
     color: #212529;
     border: none;
-    border-radius: 10px;
+    border-radius: 9px;
     cursor: pointer;
     flex: 2;
 }
 
 .btn-annulla {
     width: 100%;
-    padding: 10px;
-    font-size: 0.92rem;
+    padding: 8px;
+    font-size: 0.88rem;
     border: none;
-    border-radius: 10px;
+    border-radius: 9px;
     cursor: pointer;
     flex: 2;
 }
@@ -460,8 +460,8 @@
 .azioni-scontrino {
     display: flex;
     flex-direction: column;
-    gap: 6px;
-    margin-top: 10px;
+    gap: 4px;
+    margin-top: 6px;
 }
 
 .vuoto {
@@ -470,7 +470,7 @@
 }
 
 .nome-cliente-container {
-    margin-bottom: 15px;
+    margin-bottom: 10px;
     padding: 5px 0;
     border-bottom: 1px solid #eee;
 }
@@ -491,27 +491,27 @@
 
 @media (max-width: 1024px) {
     .scheda-layout {
-        padding: 10px;
-        gap: 12px;
+        padding: 8px;
+        gap: 10px;
     }
 
     .colonna-destra {
-        width: 340px;
-        padding: 12px;
+        width: 300px;
+        padding: 10px;
     }
 
     .nome-cliente {
-        font-size: 1.3rem;
+        font-size: 1.2rem;
     }
 
     .input-nome {
-        padding: 10px;
-        font-size: 0.95rem;
+        padding: 8px;
+        font-size: 0.88rem;
     }
 
     .btn-apri {
-        padding: 12px;
-        font-size: 1rem;
+        padding: 8px;
+        font-size: 0.92rem;
     }
 
     .btn-prodotto {
@@ -519,21 +519,21 @@
     }
 
     .prod-nome {
-        font-size: 0.78rem;
+        font-size: 0.75rem;
     }
 
     .prod-prezzo {
-        font-size: 0.7rem;
+        font-size: 0.68rem;
     }
 
     .tab {
-        padding: 6px 11px;
-        font-size: 0.82rem;
+        padding: 5px 9px;
+        font-size: 0.78rem;
     }
 
     .btn-chiudi {
-        padding: 12px;
-        font-size: 0.95rem;
+        padding: 8px;
+        font-size: 0.88rem;
     }
 }
 
@@ -542,8 +542,8 @@
         flex-direction: column;
         height: auto;
         min-height: var(--viewport-h);
-        padding: 12px;
-        gap: 16px;
+        padding: 10px;
+        gap: 14px;
     }
 
     /* La colonna sinistra (prodotti) occupa tutta la larghezza */
@@ -556,7 +556,7 @@
         width: 100%;
         position: static;
         height: auto;
-        border-radius: 16px;
+        border-radius: 14px;
     }
 
     /* Griglia prodotti: 2 colonne invece di 3 */
@@ -565,11 +565,11 @@
     }
 
     .btn-prodotto {
-        padding: 14px 8px;
+        padding: 12px 8px;
     }
 
     .nome-cliente {
-        font-size: 1.4rem;
+        font-size: 1.3rem;
     }
 
     /* Le tab categorie scorrono orizzontalmente se troppe */

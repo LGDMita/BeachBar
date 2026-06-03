@@ -36,7 +36,7 @@ h1:focus {
     display: flex;
     align-items: center;
     gap: 8px;
-    margin-bottom: 20px;
+    margin-bottom: 12px;
     flex-wrap: wrap;
 }
 
@@ -44,9 +44,9 @@ h1:focus {
     background: #e9ecef;
     border: none;
     border-radius: 8px;
-    padding: 8px 14px;
+    padding: 6px 10px;
     cursor: pointer;
-    font-size: 1rem;
+    font-size: 0.9rem;
     flex-shrink: 0;
     line-height: 1;
 }
@@ -58,8 +58,8 @@ h1:focus {
 .input-data {
     border: 1px solid #ced4da;
     border-radius: 8px;
-    padding: 8px 12px;
-    font-size: 0.95rem;
+    padding: 6px 10px;
+    font-size: 0.88rem;
     cursor: pointer;
     background: white;
     flex: 1;
@@ -71,9 +71,9 @@ h1:focus {
     color: white;
     border: none;
     border-radius: 8px;
-    padding: 8px 14px;
+    padding: 6px 10px;
     cursor: pointer;
-    font-size: 0.85rem;
+    font-size: 0.8rem;
     font-weight: 600;
     flex-shrink: 0;
 }
@@ -90,35 +90,35 @@ h1:focus {
     border: 1px solid #f5c6cb;
     padding: 10px 14px;
     border-radius: 8px;
-    margin: 12px 0;
+    margin: 10px 0;
 }
 
 .alert-conferma {
     background: #fff3cd;
-    border-radius: 12px;
-    padding: 16px;
-    margin-top: 16px;
+    border-radius: 10px;
+    padding: 12px;
+    margin-top: 12px;
     display: flex;
     align-items: center;
-    gap: 12px;
+    gap: 10px;
     flex-wrap: wrap;
 }
 
 .btn-conferma-si {
-    padding: 10px 20px;
+    padding: 8px 16px;
     background: #dc3545;
     color: white;
     border: none;
-    border-radius: 10px;
+    border-radius: 8px;
     cursor: pointer;
 }
 
 .btn-conferma-no {
-    padding: 10px 20px;
+    padding: 8px 16px;
     background: #6c757d;
     color: white;
     border: none;
-    border-radius: 10px;
+    border-radius: 8px;
     cursor: pointer;
 }
 
@@ -126,7 +126,7 @@ h1:focus {
     color: #adb5bd;
     font-size: 0.95rem;
     text-align: center;
-    padding: 24px 0;
+    padding: 20px 0;
     margin: 0;
 }
 
@@ -134,20 +134,20 @@ h1:focus {
 
 .empty-state {
     text-align: center;
-    padding: 52px 20px;
+    padding: 40px 20px;
     color: #adb5bd;
     margin-bottom: 8px;
 }
 
 .empty-state-icon {
-    font-size: 3rem;
-    margin-bottom: 10px;
+    font-size: 2.5rem;
+    margin-bottom: 8px;
     line-height: 1;
 }
 
 .empty-state-testo {
-    font-size: 1rem;
-    margin: 0 0 18px;
+    font-size: 0.95rem;
+    margin: 0 0 14px;
 }
 
 .empty-state-link {
@@ -155,9 +155,9 @@ h1:focus {
     background: #0d6efd;
     color: white;
     text-decoration: none;
-    border-radius: 10px;
-    padding: 10px 20px;
-    font-size: 0.9rem;
+    border-radius: 8px;
+    padding: 8px 16px;
+    font-size: 0.88rem;
     font-weight: 600;
 }
 
@@ -169,70 +169,70 @@ h1:focus {
 /* ─── Componenti riusabili ───────────────────── */
 
 .titolo {
-    font-size: 1.5rem;
+    font-size: 1.2rem;
     font-weight: 700;
     color: #2d3436;
-    margin: 0 0 24px;
+    margin: 0 0 14px;
 }
 
 .sezione-card {
     background: white;
-    border-radius: 20px;
-    padding: 24px;
+    border-radius: 14px;
+    padding: 16px;
     box-shadow: 0 1px 4px rgba(0,0,0,0.06);
-    margin-bottom: 16px;
+    margin-bottom: 10px;
 }
 
 /* ─── Tablet ─────────────────────────────────── */
 
 @media (max-width: 1024px) {
     .titolo {
-        font-size: 1.2rem;
-        margin: 0 0 14px;
+        font-size: 1rem;
+        margin: 0 0 10px;
     }
 
     .sezione-card {
-        padding: 16px;
-        border-radius: 14px;
-        margin-bottom: 12px;
+        padding: 12px;
+        border-radius: 12px;
+        margin-bottom: 8px;
     }
 
     .date-navigator {
-        margin-bottom: 12px;
+        margin-bottom: 8px;
     }
 
     .btn-nav-data {
-        padding: 6px 10px;
-        font-size: 0.9rem;
+        padding: 5px 8px;
+        font-size: 0.82rem;
     }
 
     .input-data {
-        padding: 6px 10px;
-        font-size: 0.88rem;
+        padding: 5px 8px;
+        font-size: 0.82rem;
     }
 
     .btn-oggi {
-        padding: 6px 10px;
-        font-size: 0.8rem;
+        padding: 5px 8px;
+        font-size: 0.75rem;
     }
 
     .alert-conferma {
-        padding: 12px;
+        padding: 10px;
         gap: 8px;
     }
 
     .btn-conferma-si,
     .btn-conferma-no {
-        padding: 8px 14px;
-        font-size: 0.9rem;
+        padding: 7px 12px;
+        font-size: 0.88rem;
     }
 
     .empty-state {
-        padding: 32px 16px;
+        padding: 28px 16px;
     }
 
     .empty-state-icon {
-        font-size: 2.2rem;
+        font-size: 2rem;
     }
 }
 
