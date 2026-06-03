@@ -245,40 +245,23 @@
     private async Task Aggiungi(int prodottoId)
     {
         errore = null;
-        // Aggiornamento ottimistico: modifica il modello locale prima della chiamata DB.
-        // L'UI risponde istantaneamente; se il salvataggio fallisce si ripristina dal DB.
-        var prodotto = prodotti.First(p => p.Id == prodottoId);
-        var oggi = DateCtx.DataSelezionata;
-        var existing = sessione!.Consumazioni.FirstOrDefault(c => c.ProdottoId == prodottoId && c.Giorno == oggi);
-        if (existing != null)
-            existing.Quantita++;
-        else
-            sessione.Consumazioni.Add(new BeachBar.Core.Entities.Consumazione
-            {
-                ProdottoId = prodottoId,
-                Prodotto = prodotto,
-                Quantita = 1,
-                Giorno = oggi,
-                SessioneId = sessione.Id
-            });
-
-        try { await Consumazioni.AggiungiConsumazione(sessione.Id, prodottoId, oggi); }
-        catch (Exception ex) { errore = $"Impossibile aggiungere il prodotto: {ex.Message}"; sessione = await Sessioni.GetSessioneByIdAsync(Id); }
+        try
+        {
+            await Consumazioni.AggiungiConsumazione(sessione!.Id, prodottoId, DateCtx.DataSelezionata);
+            sessione = await Sessioni.GetSessioneByIdAsync(Id);
+        }
+        catch (Exception ex) { errore = $"Impossibile aggiungere il prodotto: {ex.Message}"; }
     }
 
     private async Task Rimuovi(int prodottoId, DateOnly giorno)
     {
         errore = null;
-        // Aggiornamento ottimistico: modifica locale immediata, rollback su errore.
-        var cons = sessione!.Consumazioni.FirstOrDefault(c => c.ProdottoId == prodottoId && c.Giorno == giorno);
-        if (cons != null)
+        try
         {
-            if (cons.Quantita > 1) cons.Quantita--;
-            else sessione.Consumazioni.Remove(cons);
+            await Consumazioni.RimuoviConsumazione(sessione!.Id, prodottoId, giorno);
+            sessione = await Sessioni.GetSessioneByIdAsync(Id);
         }
-
-        try { await Consumazioni.RimuoviConsumazione(sessione.Id, prodottoId, giorno); }
-        catch (Exception ex) { errore = $"Impossibile rimuovere il prodotto: {ex.Message}"; sessione = await Sessioni.GetSessioneByIdAsync(Id); }
+        catch (Exception ex) { errore = $"Impossibile rimuovere il prodotto: {ex.Message}"; }
     }
 
     private async Task ChiudiSessione(bool liberaOmbrellone)
