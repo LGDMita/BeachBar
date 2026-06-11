@@ -215,6 +215,31 @@ public class SessioniService : ISessioniService
             .FirstOrDefaultAsync(s => s.Id == sessioneId)
             ?? throw new InvalidOperationException($"Sessione {sessioneId} non trovata.");
 
+        var oggi = DateOnly.FromDateTime(DateTime.Today);
+
+        // "Chiudi lista" (liberaOmbrellone=false) su un soggiorno multi-giorno non ancora
+        // terminato: tronca la sessione a oggi (incassata) e crea una sessione "continuazione"
+        // aperta per i giorni residui, così l'ombrellone resta prenotato per quei giorni.
+        if (!liberaOmbrellone && sessione.OmbrelloneId.HasValue
+            && sessione.DataFine.HasValue && sessione.DataFine.Value > oggi
+            && sessione.DataRiferimento.HasValue && sessione.DataRiferimento.Value <= oggi)
+        {
+            var dataFineOriginale = sessione.DataFine.Value;
+            var inizioContinuazione = oggi.AddDays(1);
+
+            sessione.DataFine = oggi == sessione.DataRiferimento.Value ? null : oggi;
+
+            _db.Sessioni.Add(new Sessione
+            {
+                OmbrelloneId = sessione.OmbrelloneId,
+                NomeCliente = sessione.NomeCliente,
+                Apertura = DateTime.UtcNow,
+                Chiusa = false,
+                DataRiferimento = inizioContinuazione,
+                DataFine = inizioContinuazione == dataFineOriginale ? null : dataFineOriginale
+            });
+        }
+
         sessione.Chiusa = true;
         sessione.Chiusura = DateTime.UtcNow;
 
